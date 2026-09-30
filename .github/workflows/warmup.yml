@@ -23,11 +23,12 @@ jobs:
           python-version: '3.11'
 
       - name: Inject WARMUP_ENV Secret (1-Click Setup)
-        if: ${{ secrets.WARMUP_ENV != '' }}
         env:
           WARMUP_ENV_DATA: ${{ secrets.WARMUP_ENV }}
         run: |
-          echo "$WARMUP_ENV_DATA" > .env
+          if [ -n "$WARMUP_ENV_DATA" ]; then
+            echo "$WARMUP_ENV_DATA" > .env
+          fi
 
       - name: Execute Warmup Tick (Spam Rescue + Staggered Human Send)
         env:

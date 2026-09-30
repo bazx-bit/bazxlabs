@@ -32,6 +32,17 @@ ENV_FILE = os.path.join(BASE_DIR, ".env")
 def load_env():
     """Loads environment variables from local .env if present, else os.environ"""
     config = {}
+
+    # 1. Direct multi-line secret support from environment
+    warmup_env_str = os.environ.get("WARMUP_ENV") or os.environ.get("WARMUP_ENV_DATA")
+    if warmup_env_str:
+        for line in warmup_env_str.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                config[k.strip()] = v.strip().replace(" ", "")
+
+    # 2. Local .env file
     if os.path.exists(ENV_FILE):
         with open(ENV_FILE, "r", encoding="utf-8") as f:
             for line in f:
@@ -39,9 +50,11 @@ def load_env():
                 if line and not line.startswith("#") and "=" in line:
                     k, v = line.split("=", 1)
                     config[k.strip()] = v.strip().replace(" ", "")
-    # Allow system environment variables (e.g. GitHub Actions Secrets) to override
+
+    # 3. Allow individual system environment variables to override
     for k, v in os.environ.items():
-        config[k] = v.strip().replace(" ", "")
+        if k not in ("WARMUP_ENV", "WARMUP_ENV_DATA"):
+            config[k] = v.strip().replace(" ", "")
     return config
 
 CONFIG = load_env()
