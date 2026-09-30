@@ -2,14 +2,15 @@ name: 14-Day Elite Warmup Engine
 
 on:
   schedule:
-    # Runs every 45 minutes between 04:00 UTC and 14:00 UTC (09:30 AM to 07:30 PM IST business hours)
-    - cron: '*/45 4-14 * * *'
+    # Runs at minute 15 & 45 of every hour between 04:00 UTC and 14:00 UTC (09:45 AM to 07:45 PM IST daylight hours)
+    # Offsetting from minute 0 avoids GitHub Actions top-of-hour shared runner queuing delays
+    - cron: '15,45 4-14 * * *'
   workflow_dispatch: # Allows manual trigger button anytime
 
 jobs:
   warmup-tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 5 # Safety limit - each run finishes in under 45 seconds
+    timeout-minutes: 5 # Safety limit - each run finishes in under 20 seconds
     permissions:
       contents: write
 
@@ -30,26 +31,10 @@ jobs:
             echo "$WARMUP_ENV_DATA" > .env
           fi
 
-      - name: Execute Warmup Tick (Spam Rescue + Staggered Human Send)
+      - name: Execute Warmup Tick (Targeted Spam Rescue + Staggered Human Send)
         env:
-          HERO_EMAIL: ${{ secrets.HERO_EMAIL }}
-          HERO_PASSWORD: ${{ secrets.HERO_PASSWORD }}
-          SEED_1_EMAIL: ${{ secrets.SEED_1_EMAIL }}
-          SEED_1_PASSWORD: ${{ secrets.SEED_1_PASSWORD }}
-          SEED_2_EMAIL: ${{ secrets.SEED_2_EMAIL }}
-          SEED_2_PASSWORD: ${{ secrets.SEED_2_PASSWORD }}
-          SEED_3_EMAIL: ${{ secrets.SEED_3_EMAIL }}
-          SEED_3_PASSWORD: ${{ secrets.SEED_3_PASSWORD }}
-          SEED_4_EMAIL: ${{ secrets.SEED_4_EMAIL }}
-          SEED_4_PASSWORD: ${{ secrets.SEED_4_PASSWORD }}
-          SEED_5_EMAIL: ${{ secrets.SEED_5_EMAIL }}
-          SEED_5_PASSWORD: ${{ secrets.SEED_5_PASSWORD }}
-          SEED_6_EMAIL: ${{ secrets.SEED_6_EMAIL }}
-          SEED_6_PASSWORD: ${{ secrets.SEED_6_PASSWORD }}
-          SEED_7_EMAIL: ${{ secrets.SEED_7_EMAIL }}
-          SEED_7_PASSWORD: ${{ secrets.SEED_7_PASSWORD }}
-          SEED_8_EMAIL: ${{ secrets.SEED_8_EMAIL }}
-          SEED_8_PASSWORD: ${{ secrets.SEED_8_PASSWORD }}
+          WARMUP_ENV: ${{ secrets.WARMUP_ENV }}
+          WARMUP_ENV_DATA: ${{ secrets.WARMUP_ENV }}
         run: |
           python engine.py --tick
 

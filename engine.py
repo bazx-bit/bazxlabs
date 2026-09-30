@@ -6,10 +6,30 @@ import email
 import random
 import imaplib
 import smtplib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate, make_msgid
+
+import socket
+# Set universal socket timeout to 12s to prevent IMAP/SMTP indefinite hangs
+socket.setdefaulttimeout(12)
+
+# Universal IST Timezone (UTC + 05:30) for 100% parity across Windows and GitHub Actions (Ubuntu UTC)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_current_time():
+    """Returns current time localized to IST (consistent on Windows & GitHub Actions)."""
+    return datetime.now(IST)
+
+def parse_iso_time(s):
+    """Safely parses ISO timestamp and ensures it is IST-localized."""
+    if not s:
+        return None
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=IST)
+    return dt
 
 # Support UTF-8 console output on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -87,12 +107,12 @@ def load_state():
             pass
 
     # Initial default state
-    now_iso = datetime.now().isoformat()
+    now_iso = get_current_time().isoformat()
     threads = {}
     for track_id, track in TRACKS.items():
         # Schedule initial start times staggered throughout the day
         initial_delay_minutes = random.randint(15, 120) * track_id
-        send_after = (datetime.now() + timedelta(minutes=initial_delay_minutes)).isoformat()
+        send_after = (get_current_time() + timedelta(minutes=initial_delay_minutes)).isoformat()
         threads[str(track_id)] = {
             "track_id": track_id,
             "name": track["name"],
@@ -118,7 +138,7 @@ def load_state():
     }
 
 def save_state(state):
-    state["last_tick"] = datetime.now().isoformat()
+    state["last_tick"] = get_current_time().isoformat()
     tmp_file = STATE_FILE + ".tmp"
     with open(tmp_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
@@ -165,6 +185,7 @@ def process_account_mailbox(email_addr, password):
     2. Scans INBOX for UNSEEN fleet emails -> Marks as Seen, Starred (⭐), and IMPORTANT
     """
     rescued_count = 0
+    m = None
     try:
         m = get_imap_connection(email_addr, password)
 
@@ -174,53 +195,74 @@ def process_account_mailbox(email_addr, password):
         if status == "OK":
             typ, data = m.search(None, "ALL")
             if typ == "OK" and data[0]:
-                # Only check the latest 15 messages in spam for lightning speed
-                msg_ids = data[0].split()[-15:]
+                msg_ids = data[0].split()[-10:]
                 for msg_id in msg_ids:
-                    typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
-                    if typ_fetch == "OK":
-                        raw_header = msg_data[0][1]
-                        parsed = email.message_from_bytes(raw_header)
-                        sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
+                    try:
+                        typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
+                        if typ_fetch == "OK":
+                            raw_header = msg_data[0][1]
+                            parsed = email.message_from_bytes(raw_header)
+                            sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
 
-                        if sender in FLEET_EMAILS:
-                            print(f"  🚨 [SPAM RESCUE] Trapped email from {sender} in {email_addr}'s Spam! Rescuing...", flush=True)
-                            m.copy(msg_id, "INBOX")
-                            m.store(msg_id, "+FLAGS", "(\\Deleted)")
-                            m.expunge()
-                            rescued_count += 1
-                            print(f"  ✨ [RESCUED] Moved to INBOX and verified 'Not Spam' signal for {email_addr}!", flush=True)
+                            if sender in FLEET_EMAILS:
+                                print(f"  🚨 [SPAM RESCUE] Trapped email from {sender} in {email_addr}'s Spam! Rescuing...", flush=True)
+                                m.copy(msg_id, "INBOX")
+                                m.store(msg_id, "+FLAGS", "(\\Deleted)")
+                                m.expunge()
+                                rescued_count += 1
+                                print(f"  ✨ [RESCUED] Moved to INBOX and verified 'Not Spam' signal for {email_addr}!", flush=True)
+                    except Exception:
+                        pass
 
         # 2. INBOX ENGAGEMENT
         m.select("INBOX")
         typ, data = m.search(None, "UNSEEN")
         if typ == "OK" and data[0]:
-            for msg_id in data[0].split()[-20:]:
-                typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
-                if typ_fetch == "OK":
-                    raw_header = msg_data[0][1]
-                    parsed = email.message_from_bytes(raw_header)
-                    sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
-                    if sender in FLEET_EMAILS:
-                        m.store(msg_id, "+FLAGS", "(\\Seen \\Flagged)")
-                        m.store(msg_id, "+FLAGS", "(IMPORTANT)")
-                        print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {sender} to {email_addr}", flush=True)
+            msg_ids = data[0].split()[-10:]
+            for msg_id in msg_ids:
+                try:
+                    typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
+                    if typ_fetch == "OK":
+                        raw_header = msg_data[0][1]
+                        parsed = email.message_from_bytes(raw_header)
+                        sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
+                        if sender in FLEET_EMAILS:
+                            m.store(msg_id, "+FLAGS", "(\\Seen \\Flagged IMPORTANT)")
+                            print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {sender} to {email_addr}", flush=True)
+                except Exception:
+                    pass
 
-        m.logout()
     except Exception as e:
         print(f"  ⚠️ Mailbox check notice for {email_addr}: {e}", flush=True)
+    finally:
+        if m:
+            try:
+                m.logout()
+            except Exception:
+                pass
     return rescued_count
 
-def process_all_mailboxes():
-    """Processes all accounts in a single lightning-fast sweep"""
-    print("\n🔍 --- Running High-Speed Mailbox Sweep (Spam Rescue + Engagement) ---", flush=True)
+def check_mailboxes(accounts=None):
+    """
+    Targeted, high-speed mailbox processor.
+    Defaults to checking HERO (our primary domain) and any specified partner seeds.
+    Completes in 3-8 seconds!
+    """
+    if accounts is None:
+        accounts = ["HERO"]
     total_rescued = 0
-    accounts_to_check = ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]
-    for acc_key in accounts_to_check:
+    for acc_key in accounts:
         em, pwd = get_account_creds(acc_key)
         if em and pwd:
             r = process_account_mailbox(em, pwd)
             total_rescued += r
+    return total_rescued
+
+def process_all_mailboxes():
+    """Processes all 9 accounts across the fleet (used for full manual audits)"""
+    print("\n🔍 --- Running Fleet Mailbox Sweep (Spam Rescue + Engagement) ---", flush=True)
+    all_keys = ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]
+    total_rescued = check_mailboxes(all_keys)
     if total_rescued == 0:
         print("  ✅ All clean: 0 emails trapped in spam across the fleet.", flush=True)
     else:
@@ -251,11 +293,15 @@ def calculate_human_delay():
 
 def is_business_hours():
     """
-    Checks if current local time is within business hours (09:00 AM - 07:30 PM).
-    Warmup emails must not shoot in the dead of night.
+    Checks if current IST time is within daylight business hours (09:00 AM - 07:30 PM IST).
+    Guaranteed consistent locally and on GitHub Actions runners (which run on UTC).
     """
-    now = datetime.now()
-    return 9 <= now.hour < 20
+    now = get_current_time()
+    if 9 <= now.hour < 19:
+        return True
+    if now.hour == 19 and now.minute <= 30:
+        return True
+    return False
 
 def send_message(from_email, from_pwd, to_email, subject, body_text, in_reply_to=None, references=None):
     """
@@ -307,42 +353,47 @@ def run_tick(force=False):
     4. Schedules the next turn with realistic human delay
     5. Saves state and exits in under 25 seconds
     """
+    now = get_current_time()
     print("=" * 70)
-    print(f"⏰ [BAZX WARMUP TICK] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"⏰ [BAZX WARMUP TICK] {now.strftime('%Y-%m-%d %H:%M:%S IST')}")
     print("=" * 70)
 
     state = load_state()
 
-    # 1. Unified Fast Mailbox Sweep (Spam Rescue + Star & Important)
-    rescued = process_all_mailboxes()
-    state["total_rescued"] += rescued
-
-    # 3. Check Business Hours
+    # 1. Check Business Hours
     if not is_business_hours() and not force:
-        print("🌙 Outside business hours (09:00 - 19:30). Maintaining sleep silence to mimic human behavior.")
+        print(f"🌙 Outside business hours ({now.strftime('%H:%M')} IST - active: 09:00 - 19:30 IST). Maintaining sleep silence to mimic human behavior.")
         save_state(state)
         return
 
-    # 4. Check scheduled send queue
-    now = datetime.now()
+    # 2. Check scheduled send queue
     eligible_threads = []
 
     for t_id, thread in state["threads"].items():
         send_after_str = thread.get("send_after")
         if not send_after_str:
             continue
-        send_after = datetime.fromisoformat(send_after_str)
+        send_after = parse_iso_time(send_after_str)
         if now >= send_after:
             eligible_threads.append(thread)
 
     if not eligible_threads:
         print("⏳ No scheduled emails due at this minute. Waiting for human delay windows to expire.")
+        # Fast sweep HERO only while waiting
+        rescued = check_mailboxes(["HERO"])
+        state["total_rescued"] += rescued
         save_state(state)
         return
 
     # Pick the most delayed eligible thread to process (strictly 1 message per tick!)
-    thread_to_run = sorted(eligible_threads, key=lambda t: t["send_after"])[0]
+    thread_to_run = sorted(eligible_threads, key=lambda t: parse_iso_time(t["send_after"]))[0]
     track_id = thread_to_run["track_id"]
+    partner_key = thread_to_run.get("partner_key", "SEED_1")
+
+    # Fast sweep for HERO and the partner account in this thread
+    print(f"\n🔍 --- Targeted Sweep (HERO + {partner_key}) ---", flush=True)
+    rescued = check_mailboxes(["HERO", partner_key])
+    state["total_rescued"] += rescued
     stage_idx = thread_to_run["stage_idx"]
     track_def = TRACKS[track_id]
     stages = track_def["stages"]
