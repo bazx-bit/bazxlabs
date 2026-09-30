@@ -156,94 +156,76 @@ def find_spam_folder(imap_conn):
     return "[Gmail]/Spam"
 
 # ------------------------------------------------------------------------------
-# 4. SPAM HUNTER & RESCUE ENGINE
+# 4. UNIFIED HIGH-SPEED MAILBOX PROCESSOR (SPAM RESCUE + ENGAGEMENT)
 # ------------------------------------------------------------------------------
-def run_spam_rescue_for_account(email_addr, password):
+def process_account_mailbox(email_addr, password):
     """
-    Checks [Gmail]/Spam folder. If any email from our fleet is trapped:
-    1. Moves it to INBOX (Not Spam signal)
-    2. Marks as Seen (Read)
-    3. Stars it (\Flagged)
-    4. Marks as IMPORTANT
+    Connects to an account once:
+    1. Scans recent emails in [Gmail]/Spam -> Moves trapped fleet emails to INBOX
+    2. Scans INBOX for UNSEEN fleet emails -> Marks as Seen, Starred (⭐), and IMPORTANT
     """
     rescued_count = 0
     try:
         m = get_imap_connection(email_addr, password)
+
+        # 1. SPAM RESCUE
         spam_folder = find_spam_folder(m)
         status, _ = m.select(f'"{spam_folder}"')
-        if status != "OK":
-            m.logout()
-            return 0
+        if status == "OK":
+            typ, data = m.search(None, "ALL")
+            if typ == "OK" and data[0]:
+                # Only check the latest 15 messages in spam for lightning speed
+                msg_ids = data[0].split()[-15:]
+                for msg_id in msg_ids:
+                    typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
+                    if typ_fetch == "OK":
+                        raw_header = msg_data[0][1]
+                        parsed = email.message_from_bytes(raw_header)
+                        sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
 
-        typ, data = m.search(None, "ALL")
+                        if sender in FLEET_EMAILS:
+                            print(f"  🚨 [SPAM RESCUE] Trapped email from {sender} in {email_addr}'s Spam! Rescuing...", flush=True)
+                            m.copy(msg_id, "INBOX")
+                            m.store(msg_id, "+FLAGS", "(\\Deleted)")
+                            m.expunge()
+                            rescued_count += 1
+                            print(f"  ✨ [RESCUED] Moved to INBOX and verified 'Not Spam' signal for {email_addr}!", flush=True)
+
+        # 2. INBOX ENGAGEMENT
+        m.select("INBOX")
+        typ, data = m.search(None, "UNSEEN")
         if typ == "OK" and data[0]:
-            msg_ids = data[0].split()
-            for msg_id in msg_ids:
+            for msg_id in data[0].split()[-20:]:
                 typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
                 if typ_fetch == "OK":
                     raw_header = msg_data[0][1]
                     parsed = email.message_from_bytes(raw_header)
                     sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
-
                     if sender in FLEET_EMAILS:
-                        print(f"  🚨 [SPAM RESCUE] Trapped email from {sender} found in {email_addr}'s Spam! Rescuing...")
-                        # 1. Copy to INBOX
-                        m.copy(msg_id, "INBOX")
-                        # 2. Mark deleted in Spam and expunge
-                        m.store(msg_id, "+FLAGS", "(\\Deleted)")
-                        m.expunge()
-                        rescued_count += 1
-                        print(f"  ✨ [RESCUED] Moved to INBOX and verified 'Not Spam' signal for {email_addr}!")
+                        m.store(msg_id, "+FLAGS", "(\\Seen \\Flagged)")
+                        m.store(msg_id, "+FLAGS", "(IMPORTANT)")
+                        print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {sender} to {email_addr}", flush=True)
 
         m.logout()
     except Exception as e:
-        print(f"  ⚠️ Spam check error for {email_addr}: {e}")
+        print(f"  ⚠️ Mailbox check notice for {email_addr}: {e}", flush=True)
     return rescued_count
 
-def run_global_spam_rescue():
-    """Scans Spam folders across all accounts"""
-    print("\n🔍 --- Running Global Spam Hunter & Rescue Scan ---")
+def process_all_mailboxes():
+    """Processes all accounts in a single lightning-fast sweep"""
+    print("\n🔍 --- Running High-Speed Mailbox Sweep (Spam Rescue + Engagement) ---", flush=True)
     total_rescued = 0
     accounts_to_check = ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]
     for acc_key in accounts_to_check:
         em, pwd = get_account_creds(acc_key)
         if em and pwd:
-            r = run_spam_rescue_for_account(em, pwd)
+            r = process_account_mailbox(em, pwd)
             total_rescued += r
     if total_rescued == 0:
-        print("  ✅ All clean: 0 emails trapped in spam across the fleet.")
+        print("  ✅ All clean: 0 emails trapped in spam across the fleet.", flush=True)
     else:
-        print(f"  🎉 Total Rescued in this cycle: {total_rescued} emails successfully saved to INBOX!")
+        print(f"  🎉 Total Rescued in this cycle: {total_rescued} emails successfully saved to INBOX!", flush=True)
     return total_rescued
-
-# ------------------------------------------------------------------------------
-# 5. INBOX ENGAGEMENT (STAR ⭐, IMPORTANT 🏷️, MARK READ)
-# ------------------------------------------------------------------------------
-def engage_inbox_emails(email_addr, password):
-    """
-    Scans INBOX for emails from fleet.
-    Marks them as \Seen (Read), \Flagged (Starred ⭐), and IMPORTANT.
-    """
-    try:
-        m = get_imap_connection(email_addr, password)
-        m.select("INBOX")
-        typ, data = m.search(None, "UNSEEN")
-        if typ == "OK" and data[0]:
-            for msg_id in data[0].split():
-                typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
-                if typ_fetch == "OK":
-                    raw_header = msg_data[0][1]
-                    parsed = email.message_from_bytes(raw_header)
-                    sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
-                    if sender in FLEET_EMAILS:
-                        # Mark read (\Seen), Star (\Flagged)
-                        m.store(msg_id, "+FLAGS", "(\\Seen \\Flagged)")
-                        # Mark Important if supported
-                        m.store(msg_id, "+FLAGS", "(IMPORTANT)")
-                        print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {sender} to {email_addr}")
-        m.logout()
-    except Exception as e:
-        print(f"  ⚠️ Inbox engagement error for {email_addr}: {e}")
 
 # ------------------------------------------------------------------------------
 # 6. EMAIL TRANSMISSION ENGINE (HUMAN JITTER & THREADING)
@@ -331,15 +313,9 @@ def run_tick(force=False):
 
     state = load_state()
 
-    # 1. Spam Hunter
-    rescued = run_global_spam_rescue()
+    # 1. Unified Fast Mailbox Sweep (Spam Rescue + Star & Important)
+    rescued = process_all_mailboxes()
     state["total_rescued"] += rescued
-
-    # 2. Inbox Engagement
-    for acc_key in ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]:
-        em, pwd = get_account_creds(acc_key)
-        if em and pwd:
-            engage_inbox_emails(em, pwd)
 
     # 3. Check Business Hours
     if not is_business_hours() and not force:
