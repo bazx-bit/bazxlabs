@@ -71,9 +71,9 @@ def load_env():
                     k, v = line.split("=", 1)
                     config[k.strip()] = v.strip().replace(" ", "")
 
-    # 3. Allow individual system environment variables to override
+    # 3. Allow individual system environment variables to override only if non-empty
     for k, v in os.environ.items():
-        if k not in ("WARMUP_ENV", "WARMUP_ENV_DATA"):
+        if k not in ("WARMUP_ENV", "WARMUP_ENV_DATA") and v.strip():
             config[k] = v.strip().replace(" ", "")
     return config
 
