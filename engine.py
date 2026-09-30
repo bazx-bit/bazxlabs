@@ -487,7 +487,7 @@ if __name__ == "__main__":
             force_flag = "--force" in sys.argv
             run_tick(force=force_flag)
         elif cmd == "--spam-rescue":
-            run_global_spam_rescue()
+            process_all_mailboxes()
         elif cmd == "--status":
             st = load_state()
             print("\n📊 --- BAZX WARMUP ENGINE STATUS ---")
