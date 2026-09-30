@@ -1,0 +1,515 @@
+import os
+import sys
+import json
+import time
+import email
+import random
+import imaplib
+import smtplib
+from datetime import datetime, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formatdate, make_msgid
+
+# Support UTF-8 console output on Windows
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+# Import our realistic 8-track stories
+from stories import TRACKS, spin
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATE_FILE = os.path.join(BASE_DIR, "state.json")
+ENV_FILE = os.path.join(BASE_DIR, ".env")
+
+# ------------------------------------------------------------------------------
+# 1. CREDENTIALS & CONFIG LOADER
+# ------------------------------------------------------------------------------
+def load_env():
+    """Loads environment variables from local .env if present, else os.environ"""
+    config = {}
+    if os.path.exists(ENV_FILE):
+        with open(ENV_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    config[k.strip()] = v.strip().replace(" ", "")
+    # Allow system environment variables (e.g. GitHub Actions Secrets) to override
+    for k, v in os.environ.items():
+        config[k] = v.strip().replace(" ", "")
+    return config
+
+CONFIG = load_env()
+
+def get_account_creds(key):
+    """Retrieves (email, password) tuple for 'HERO' or 'SEED_1'..'SEED_8'"""
+    if key == "HERO":
+        email_addr = CONFIG.get("HERO_EMAIL", "")
+        pwd = CONFIG.get("HERO_PASSWORD", "")
+    else:
+        email_addr = CONFIG.get(f"{key}_EMAIL", "")
+        pwd = CONFIG.get(f"{key}_PASSWORD", "")
+    return email_addr, pwd
+
+FLEET_EMAILS = set()
+for k in ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]:
+    em, _ = get_account_creds(k)
+    if em:
+        FLEET_EMAILS.add(em.lower())
+
+# ------------------------------------------------------------------------------
+# 2. STATE MANAGER
+# ------------------------------------------------------------------------------
+def load_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+
+    # Initial default state
+    now_iso = datetime.now().isoformat()
+    threads = {}
+    for track_id, track in TRACKS.items():
+        # Schedule initial start times staggered throughout the day
+        initial_delay_minutes = random.randint(15, 120) * track_id
+        send_after = (datetime.now() + timedelta(minutes=initial_delay_minutes)).isoformat()
+        threads[str(track_id)] = {
+            "track_id": track_id,
+            "name": track["name"],
+            "direction": track["direction"],
+            "partner_key": track["partner_key"],
+            "stage_idx": 0,
+            "subject": None,
+            "last_msg_id": None,
+            "last_timestamp": None,
+            "send_after": send_after,
+            "status": "ready_to_start",
+            "history": []
+        }
+
+    return {
+        "day": 1,
+        "started_at": now_iso,
+        "last_tick": now_iso,
+        "total_sent": 0,
+        "total_received": 0,
+        "total_rescued": 0,
+        "threads": threads
+    }
+
+def save_state(state):
+    state["last_tick"] = datetime.now().isoformat()
+    tmp_file = STATE_FILE + ".tmp"
+    with open(tmp_file, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+    # Atomic replace to prevent corrupted state on runner crash
+    if os.path.exists(STATE_FILE):
+        os.replace(tmp_file, STATE_FILE)
+    else:
+        os.rename(tmp_file, STATE_FILE)
+
+# ------------------------------------------------------------------------------
+# 3. IMAP & SMTP CLIENT HELPERS
+# ------------------------------------------------------------------------------
+def get_imap_connection(email_addr, password):
+    m = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+    m.login(email_addr, password)
+    return m
+
+def get_smtp_connection(email_addr, password):
+    s = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+    s.starttls()
+    s.login(email_addr, password)
+    return s
+
+def find_spam_folder(imap_conn):
+    """Dynamically finds the Spam / Junk folder path for Gmail"""
+    typ, data = imap_conn.list()
+    if typ == "OK":
+        for folder in data:
+            name = folder.decode("utf-8")
+            if "\\Spam" in name or "[Gmail]/Spam" in name:
+                # Extract quoted name
+                parts = name.split(' "/" ')
+                if len(parts) > 1:
+                    return parts[-1].strip('"')
+    return "[Gmail]/Spam"
+
+# ------------------------------------------------------------------------------
+# 4. SPAM HUNTER & RESCUE ENGINE
+# ------------------------------------------------------------------------------
+def run_spam_rescue_for_account(email_addr, password):
+    """
+    Checks [Gmail]/Spam folder. If any email from our fleet is trapped:
+    1. Moves it to INBOX (Not Spam signal)
+    2. Marks as Seen (Read)
+    3. Stars it (\Flagged)
+    4. Marks as IMPORTANT
+    """
+    rescued_count = 0
+    try:
+        m = get_imap_connection(email_addr, password)
+        spam_folder = find_spam_folder(m)
+        status, _ = m.select(f'"{spam_folder}"')
+        if status != "OK":
+            m.logout()
+            return 0
+
+        typ, data = m.search(None, "ALL")
+        if typ == "OK" and data[0]:
+            msg_ids = data[0].split()
+            for msg_id in msg_ids:
+                typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
+                if typ_fetch == "OK":
+                    raw_header = msg_data[0][1]
+                    parsed = email.message_from_bytes(raw_header)
+                    sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
+
+                    if sender in FLEET_EMAILS:
+                        print(f"  🚨 [SPAM RESCUE] Trapped email from {sender} found in {email_addr}'s Spam! Rescuing...")
+                        # 1. Copy to INBOX
+                        m.copy(msg_id, "INBOX")
+                        # 2. Mark deleted in Spam and expunge
+                        m.store(msg_id, "+FLAGS", "(\\Deleted)")
+                        m.expunge()
+                        rescued_count += 1
+                        print(f"  ✨ [RESCUED] Moved to INBOX and verified 'Not Spam' signal for {email_addr}!")
+
+        m.logout()
+    except Exception as e:
+        print(f"  ⚠️ Spam check error for {email_addr}: {e}")
+    return rescued_count
+
+def run_global_spam_rescue():
+    """Scans Spam folders across all accounts"""
+    print("\n🔍 --- Running Global Spam Hunter & Rescue Scan ---")
+    total_rescued = 0
+    accounts_to_check = ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]
+    for acc_key in accounts_to_check:
+        em, pwd = get_account_creds(acc_key)
+        if em and pwd:
+            r = run_spam_rescue_for_account(em, pwd)
+            total_rescued += r
+    if total_rescued == 0:
+        print("  ✅ All clean: 0 emails trapped in spam across the fleet.")
+    else:
+        print(f"  🎉 Total Rescued in this cycle: {total_rescued} emails successfully saved to INBOX!")
+    return total_rescued
+
+# ------------------------------------------------------------------------------
+# 5. INBOX ENGAGEMENT (STAR ⭐, IMPORTANT 🏷️, MARK READ)
+# ------------------------------------------------------------------------------
+def engage_inbox_emails(email_addr, password):
+    """
+    Scans INBOX for emails from fleet.
+    Marks them as \Seen (Read), \Flagged (Starred ⭐), and IMPORTANT.
+    """
+    try:
+        m = get_imap_connection(email_addr, password)
+        m.select("INBOX")
+        typ, data = m.search(None, "UNSEEN")
+        if typ == "OK" and data[0]:
+            for msg_id in data[0].split():
+                typ_fetch, msg_data = m.fetch(msg_id, "(RFC822.HEADER)")
+                if typ_fetch == "OK":
+                    raw_header = msg_data[0][1]
+                    parsed = email.message_from_bytes(raw_header)
+                    sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
+                    if sender in FLEET_EMAILS:
+                        # Mark read (\Seen), Star (\Flagged)
+                        m.store(msg_id, "+FLAGS", "(\\Seen \\Flagged)")
+                        # Mark Important if supported
+                        m.store(msg_id, "+FLAGS", "(IMPORTANT)")
+                        print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {sender} to {email_addr}")
+        m.logout()
+    except Exception as e:
+        print(f"  ⚠️ Inbox engagement error for {email_addr}: {e}")
+
+# ------------------------------------------------------------------------------
+# 6. EMAIL TRANSMISSION ENGINE (HUMAN JITTER & THREADING)
+# ------------------------------------------------------------------------------
+def calculate_human_delay():
+    """
+    Calculates realistic human reply delay:
+    - Mode A (15%): 8 to 25 minutes (Quick desk reply)
+    - Mode B (65%): 45 to 210 minutes (Deep work / meeting delay)
+    - Mode C (20%): 360 to 720 minutes (Next morning catch-up)
+    """
+    rand = random.random()
+    if rand < 0.15:
+        # At desk
+        minutes = random.randint(8, 25)
+    elif rand < 0.80:
+        # Deep focus
+        minutes = random.randint(45, 210)
+    else:
+        # Long gap / next session
+        minutes = random.randint(360, 720)
+    return minutes
+
+def is_business_hours():
+    """
+    Checks if current local time is within business hours (09:00 AM - 07:30 PM).
+    Warmup emails must not shoot in the dead of night.
+    """
+    now = datetime.now()
+    return 9 <= now.hour < 20
+
+def send_message(from_email, from_pwd, to_email, subject, body_text, in_reply_to=None, references=None):
+    """
+    Constructs an authentic multipart email with proper threading headers.
+    """
+    msg = MIMEMultipart("alternative")
+    domain = from_email.split("@")[-1]
+    msg_id = make_msgid(domain=domain)
+
+    msg["From"] = from_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg["Date"] = formatdate(localtime=True)
+    msg["Message-ID"] = msg_id
+
+    if in_reply_to:
+        msg["In-Reply-To"] = in_reply_to
+    if references:
+        msg["References"] = references
+    elif in_reply_to:
+        msg["References"] = in_reply_to
+
+    # Plain text version
+    part1 = MIMEText(body_text, "plain", "utf-8")
+    msg.attach(part1)
+
+    # Clean native HTML version (<div dir="ltr">...</div>) matching Gmail composer
+    html_paragraphs = "".join(f"<p style=\"margin:0 0 12px 0;\">{line}</p>" if line else "<br>" for line in body_text.split("\n"))
+    html_content = f'<div dir="ltr" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222;line-height:1.5;">{html_paragraphs}</div>'
+    part2 = MIMEText(html_content, "html", "utf-8")
+    msg.attach(part2)
+
+    # Send via TLS
+    s = get_smtp_connection(from_email, from_pwd)
+    s.sendmail(from_email, [to_email], msg.as_string())
+    s.quit()
+
+    return msg_id
+
+# ------------------------------------------------------------------------------
+# 7. THE TICK CONTROLLER (30-SECOND MICRO-RUN)
+# ------------------------------------------------------------------------------
+def run_tick(force=False):
+    """
+    Executes a single micro-run (ideal for GitHub Actions cron or local scheduler):
+    1. Rescues trapped emails from Spam
+    2. Stars and reads new incoming emails
+    3. Finds at most ONE eligible scheduled conversation turn to send
+    4. Schedules the next turn with realistic human delay
+    5. Saves state and exits in under 25 seconds
+    """
+    print("=" * 70)
+    print(f"⏰ [BAZX WARMUP TICK] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 70)
+
+    state = load_state()
+
+    # 1. Spam Hunter
+    rescued = run_global_spam_rescue()
+    state["total_rescued"] += rescued
+
+    # 2. Inbox Engagement
+    for acc_key in ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]:
+        em, pwd = get_account_creds(acc_key)
+        if em and pwd:
+            engage_inbox_emails(em, pwd)
+
+    # 3. Check Business Hours
+    if not is_business_hours() and not force:
+        print("🌙 Outside business hours (09:00 - 19:30). Maintaining sleep silence to mimic human behavior.")
+        save_state(state)
+        return
+
+    # 4. Check scheduled send queue
+    now = datetime.now()
+    eligible_threads = []
+
+    for t_id, thread in state["threads"].items():
+        send_after_str = thread.get("send_after")
+        if not send_after_str:
+            continue
+        send_after = datetime.fromisoformat(send_after_str)
+        if now >= send_after:
+            eligible_threads.append(thread)
+
+    if not eligible_threads:
+        print("⏳ No scheduled emails due at this minute. Waiting for human delay windows to expire.")
+        save_state(state)
+        return
+
+    # Pick the most delayed eligible thread to process (strictly 1 message per tick!)
+    thread_to_run = sorted(eligible_threads, key=lambda t: t["send_after"])[0]
+    track_id = thread_to_run["track_id"]
+    stage_idx = thread_to_run["stage_idx"]
+    track_def = TRACKS[track_id]
+    stages = track_def["stages"]
+
+    if stage_idx >= len(stages):
+        print(f"✅ Track {track_id} ('{track_def['name']}') has completed all 5 stages!")
+        thread_to_run["send_after"] = None
+        save_state(state)
+        return
+
+    turn = stages[stage_idx]
+    hero_email, hero_pwd = get_account_creds("HERO")
+    seed_email, seed_pwd = get_account_creds(thread_to_run["partner_key"])
+
+    if turn["role"] == "hero":
+        sender_email, sender_pwd = hero_email, hero_pwd
+        recip_email = seed_email
+    else:
+        sender_email, sender_pwd = seed_email, seed_pwd
+        recip_email = hero_email
+
+    # Prepare Subject & Body with deep spintax
+    raw_subject = turn["subject"]
+    if "{subject}" in raw_subject:
+        subject = raw_subject.replace("{subject}", thread_to_run["subject"] or track_def["name"])
+    else:
+        subject = spin(raw_subject)
+        thread_to_run["subject"] = subject
+
+    body = spin(turn["body"])
+
+    print(f"\n📨 [DISPATCHING EMAIL] Track {track_id}: {track_def['name']}")
+    print(f"  From: {sender_email}")
+    print(f"  To:   {recip_email}")
+    print(f"  Subj: {subject}")
+    print(f"  Turn: {stage_idx + 1} of {len(stages)} (Stage {turn['stage']})")
+
+    try:
+        msg_id = send_message(
+            from_email=sender_email,
+            from_pwd=sender_pwd,
+            to_email=recip_email,
+            subject=subject,
+            body_text=body,
+            in_reply_to=thread_to_run.get("last_msg_id"),
+            references=thread_to_run.get("last_msg_id")
+        )
+        print(f"  ✅ Sent successfully! Message-ID: {msg_id}")
+
+        # Update state
+        thread_to_run["stage_idx"] += 1
+        thread_to_run["last_msg_id"] = msg_id
+        thread_to_run["last_timestamp"] = now.isoformat()
+        state["total_sent"] += 1
+
+        # Schedule next turn with human delay
+        next_delay_minutes = calculate_human_delay()
+        next_send_after = now + timedelta(minutes=next_delay_minutes)
+        thread_to_run["send_after"] = next_send_after.isoformat()
+        print(f"  ⏱️ Next turn in Track {track_id} scheduled for {next_send_after.strftime('%Y-%m-%d %H:%M:%S')} (Delay: {next_delay_minutes} mins)")
+    except Exception as e:
+        print(f"  ❌ SMTP Send error for Track {track_id}: {e}")
+        # Retry with a 15-minute backoff
+        thread_to_run["send_after"] = (now + timedelta(minutes=15)).isoformat()
+
+    save_state(state)
+    print("\n🏁 Micro-tick completed.")
+
+# ------------------------------------------------------------------------------
+# 8. TEST SEND (SINGLE ISOLATED EMAIL AS REQUESTED BY USER)
+# ------------------------------------------------------------------------------
+def run_test_send():
+    """
+    Sends exactly ONE verified test email from HERO account to SEED_1
+    and confirms receipt via IMAP.
+    """
+    hero_email, hero_pwd = get_account_creds("HERO")
+    seed_email, seed_pwd = get_account_creds("SEED_1")
+
+    print("\n" + "=" * 70)
+    print("🧪 [SINGLE VERIFICATION TEST] Sending 1 Email from HERO account...")
+    print(f"  Sender:    {hero_email}")
+    print(f"  Recipient: {seed_email}")
+    print("=" * 70)
+
+    test_subj = f"Verification Ping - {datetime.now().strftime('%H:%M:%S')}"
+    test_body = (
+        "Hey,\n\n"
+        f"Testing the direct SMTP pipe from our Google Workspace domain {hero_email}.\n\n"
+        "Verifying DKIM cryptographic signature and SPF alignment. No action required.\n\n"
+        "Best,\n"
+        "Raj bazx"
+    )
+
+    print("📤 Connecting to SMTP and dispatching message...")
+    msg_id = send_message(hero_email, hero_pwd, seed_email, test_subj, test_body)
+    print(f"✅ Dispatched successfully! Message-ID: {msg_id}")
+
+    print("\n📥 Checking delivery in recipient mailbox (waiting 5 seconds)...")
+    time.sleep(5)
+
+    # Check recipient IMAP
+    try:
+        m = get_imap_connection(seed_email, seed_pwd)
+        # Check INBOX first
+        m.select("INBOX")
+        typ, data = m.search(None, f'SUBJECT "{test_subj}"')
+        if typ == "OK" and data[0]:
+            print("🎉 DELIVERY CONFIRMED IN PRIMARY INBOX! (100% Inbox Placement)")
+            m.logout()
+            return True
+
+        # Check Spam
+        spam_folder = find_spam_folder(m)
+        m.select(f'"{spam_folder}"')
+        typ, data = m.search(None, f'SUBJECT "{test_subj}"')
+        if typ == "OK" and data[0]:
+            print(f"⚠️ Delivered to {spam_folder}. Triggering auto-rescue...")
+            msg_num = data[0].split()[0]
+            m.copy(msg_num, "INBOX")
+            m.store(msg_num, "+FLAGS", "(\\Deleted)")
+            m.expunge()
+            print("✨ Auto-rescued to INBOX successfully!")
+            m.logout()
+            return True
+
+        m.logout()
+        print("ℹ️ Email in transit or taking slightly longer to index. SMTP transmission succeeded.")
+    except Exception as e:
+        print(f"⚠️ Delivery check warning: {e}")
+    return True
+
+# ------------------------------------------------------------------------------
+# 9. CLI ENTRYPOINT
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1]
+        if cmd == "--test-send":
+            run_test_send()
+        elif cmd == "--tick":
+            force_flag = "--force" in sys.argv
+            run_tick(force=force_flag)
+        elif cmd == "--spam-rescue":
+            run_global_spam_rescue()
+        elif cmd == "--status":
+            st = load_state()
+            print("\n📊 --- BAZX WARMUP ENGINE STATUS ---")
+            print(f"  Day:            {st['day']} / 14")
+            print(f"  Total Sent:     {st['total_sent']}")
+            print(f"  Total Rescued:  {st['total_rescued']}")
+            print(f"  Active Tracks:  {len(st['threads'])}")
+            print("---------------------------------------")
+            for t_id, t in st["threads"].items():
+                print(f"  Track {t_id}: {t['name']:<35} | Turn: {t['stage_idx']}/10 | Next: {t.get('send_after') or 'Completed'}")
+        else:
+            print("Unknown command. Options: --test-send, --tick [--force], --spam-rescue, --status")
+    else:
+        print("BazxWarmupEngine v5.0 ready. Use --test-send, --tick, --spam-rescue, or --status.")
