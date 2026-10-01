@@ -6,6 +6,7 @@ import email
 import random
 import imaplib
 import smtplib
+import subprocess
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -527,12 +528,176 @@ def run_test_send():
     return True
 
 # ------------------------------------------------------------------------------
-# 9. CLI ENTRYPOINT
+# 9. CONTINUOUS RUNNER & CLOUD SYNC (FOR LONG-RUNNING GITHUB ACTIONS)
+# ------------------------------------------------------------------------------
+def git_sync_state(commit_msg="Auto-update warmup state [skip ci]"):
+    """Pushes updated state.json back to GitHub remote repository."""
+    try:
+        subprocess.run(["git", "add", "state.json"], timeout=10)
+        diff = subprocess.run(["git", "diff", "--staged"], capture_output=True)
+        if diff.stdout:
+            subprocess.run(["git", "commit", "-m", commit_msg], timeout=10)
+            subprocess.run(["git", "push", "origin", "main"], timeout=20)
+            print("  💾 State synced to GitHub remote successfully!", flush=True)
+    except Exception as e:
+        print(f"  ⚠️ Git sync notice: {e}", flush=True)
+
+def run_session(max_hours=4.0):
+    """
+    Keeps running on GitHub Actions runner for the duration of the daylight session.
+    - Stays awake and active throughout the session (no reliance on 30-min wakeups).
+    - Paces conversation turns with genuine, natural human delays (15 to 30 minutes).
+    - Eliminates robotic quick replies.
+    - Saves and pushes state to Git after every single transaction.
+    """
+    start_time = time.time()
+    max_seconds = max_hours * 3600
+
+    print("=" * 70, flush=True)
+    print(f"🚀 [BAZX WARMUP LIVE SESSION STARTED] {get_current_time().strftime('%Y-%m-%d %H:%M:%S IST')}", flush=True)
+    print(f"   Target Duration: {max_hours:.1f} hours | Pacing Jitter: 15-30 mins | Daylight Only", flush=True)
+    print("=" * 70, flush=True)
+
+    while True:
+        now = get_current_time()
+        elapsed = time.time() - start_time
+
+        # 1. Check max session duration
+        if elapsed >= max_seconds:
+            print(f"\n🏁 Session time limit reached ({max_hours:.1f} hrs). Ending session cleanly.", flush=True)
+            break
+
+        # 2. Check daylight business hours (09:00 - 19:30 IST)
+        if not is_business_hours():
+            print(f"\n🌙 Outside business hours ({now.strftime('%H:%M')} IST - active: 09:00 - 19:30 IST). Ending session cleanly.", flush=True)
+            break
+
+        # 3. Pull latest state from remote in case of external commits
+        try:
+            subprocess.run(["git", "pull", "--rebase", "origin", "main"], capture_output=True, timeout=15)
+        except Exception:
+            pass
+
+        state = load_state()
+
+        # 4. Check eligible threads
+        eligible = []
+        for t_id, t in state["threads"].items():
+            s_after = t.get("send_after")
+            if s_after and now >= parse_iso_time(s_after):
+                eligible.append(t)
+
+        if eligible:
+            # Pick the most delayed eligible thread
+            thread_to_run = sorted(eligible, key=lambda x: parse_iso_time(x["send_after"]))[0]
+            track_id = thread_to_run["track_id"]
+            partner_key = thread_to_run.get("partner_key", "SEED_1")
+            track_def = TRACKS[track_id]
+            stage_idx = thread_to_run["stage_idx"]
+            stages = track_def["stages"]
+
+            if stage_idx < len(stages):
+                turn = stages[stage_idx]
+                hero_email, hero_pwd = get_account_creds("HERO")
+                seed_email, seed_pwd = get_account_creds(partner_key)
+
+                if turn["role"] == "hero":
+                    sender_email, sender_pwd = hero_email, hero_pwd
+                    recip_email = seed_email
+                else:
+                    sender_email, sender_pwd = seed_email, seed_pwd
+                    recip_email = hero_email
+
+                # Sweep mailboxes for spam rescue and engagement
+                print(f"\n🔍 --- Targeted Sweep (HERO + {partner_key}) ---", flush=True)
+                rescued = check_mailboxes(["HERO", partner_key])
+                state["total_rescued"] += rescued
+
+                # Spintax formatting
+                raw_subj = turn["subject"]
+                if "{subject}" in raw_subj:
+                    subj = raw_subj.replace("{subject}", thread_to_run["subject"] or track_def["name"])
+                else:
+                    subj = spin(raw_subj)
+                    thread_to_run["subject"] = subj
+                body = spin(turn["body"])
+
+                print(f"\n📨 [DISPATCHING EMAIL] Track {track_id}: {track_def['name']}", flush=True)
+                print(f"  From: {sender_email}", flush=True)
+                print(f"  To:   {recip_email}", flush=True)
+                print(f"  Subj: {subj}", flush=True)
+                print(f"  Turn: {stage_idx + 1} of {len(stages)} (Stage {turn['stage']})", flush=True)
+
+                try:
+                    msg_id = send_message(
+                        sender_email,
+                        sender_pwd,
+                        recip_email,
+                        subj,
+                        body,
+                        in_reply_to=thread_to_run.get("last_msg_id"),
+                        references=thread_to_run.get("last_msg_id")
+                    )
+                    print(f"  ✅ Sent successfully! Message-ID: {msg_id}", flush=True)
+
+                    # Update state
+                    thread_to_run["stage_idx"] += 1
+                    thread_to_run["last_msg_id"] = msg_id
+                    thread_to_run["last_timestamp"] = now.isoformat()
+                    state["total_sent"] += 1
+
+                    # Next turn delay (human delay)
+                    next_delay_m = calculate_human_delay()
+                    next_send_after = now + timedelta(minutes=next_delay_m)
+                    thread_to_run["send_after"] = next_send_after.isoformat()
+                    print(f"  ⏱️ Next turn in Track {track_id} scheduled for {next_send_after.strftime('%Y-%m-%d %H:%M:%S IST')} (Delay: {next_delay_m} mins)", flush=True)
+
+                except Exception as e:
+                    print(f"  ❌ SMTP Send error for Track {track_id}: {e}", flush=True)
+                    thread_to_run["send_after"] = (now + timedelta(minutes=15)).isoformat()
+
+                # Save state and immediately push to GitHub remote
+                save_state(state)
+                git_sync_state(f"Auto-update warmup: Track {track_id} Turn {stage_idx+1} [skip ci]")
+
+                # Human pacing delay before next interaction (15 to 30 minutes)
+                pacing_delay = random.randint(900, 1800)
+                mins = pacing_delay // 60
+                secs = pacing_delay % 60
+                print(f"\n☕ [HUMAN PACING GAP] Pausing {mins}m {secs}s before next interaction to simulate authentic agency workflow...", flush=True)
+
+                time_slept = 0
+                while time_slept < pacing_delay:
+                    sleep_chunk = min(60, pacing_delay - time_slept)
+                    time.sleep(sleep_chunk)
+                    time_slept += sleep_chunk
+                    remaining = pacing_delay - time_slept
+                    if remaining > 0 and remaining % 300 == 0:
+                        print(f"   ⏳ Pacing heartbeat: {remaining // 60}m remaining until next interaction...", flush=True)
+                continue
+
+        # If no email is due right now, sleep until the earliest scheduled turn
+        pending = [parse_iso_time(t["send_after"]) for t in state["threads"].values() if t.get("send_after")]
+        if pending:
+            earliest = min(pending)
+            wait_s = max(60, int((earliest - now).total_seconds()))
+            wait_s = min(wait_s, 900)  # Max sleep 15 mins before rechecking
+            print(f"\n⏳ No email due right now. Next due at {earliest.strftime('%H:%M:%S IST')}. Waiting {wait_s//60}m {wait_s%60}s...", flush=True)
+            time.sleep(wait_s)
+        else:
+            print("🎉 All 8 tracks completed all stages! Warmup complete.", flush=True)
+            break
+
+# ------------------------------------------------------------------------------
+# 10. CLI ENTRYPOINT
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         cmd = sys.argv[1]
-        if cmd == "--test-send":
+        if cmd == "--session":
+            hours = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
+            run_session(max_hours=hours)
+        elif cmd == "--test-send":
             run_test_send()
         elif cmd == "--tick":
             force_flag = "--force" in sys.argv
@@ -550,6 +715,6 @@ if __name__ == "__main__":
             for t_id, t in st["threads"].items():
                 print(f"  Track {t_id}: {t['name']:<35} | Turn: {t['stage_idx']}/10 | Next: {t.get('send_after') or 'Completed'}")
         else:
-            print("Unknown command. Options: --test-send, --tick [--force], --spam-rescue, --status")
+            print("Unknown command. Options: --session [hours], --test-send, --tick [--force], --spam-rescue, --status")
     else:
-        print("BazxWarmupEngine v5.0 ready. Use --test-send, --tick, --spam-rescue, or --status.")
+        print("BazxWarmupEngine v5.0 ready. Use --session, --test-send, --tick, --spam-rescue, or --status.")
