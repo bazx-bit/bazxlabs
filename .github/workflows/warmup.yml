@@ -2,17 +2,17 @@ name: 14-Day Elite Warmup Engine (Autonomous Session)
 
 on:
   schedule:
-    # 2 core daylight sessions per day (mimicking an authentic agency working schedule):
-    # Session 1: 04:30 UTC = 10:00 AM IST (runs for 3.5 hours)
-    # Session 2: 09:00 UTC = 02:30 PM IST (runs for 3.5 hours)
-    - cron: '30 4 * * *'
+    # 2 core daylight working shifts per day (mimicking an authentic agency working schedule):
+    # Shift 1 (Morning):   04:00 UTC = 09:30 AM IST (runs for 5 hours)
+    # Shift 2 (Afternoon): 09:00 UTC = 02:30 PM IST (runs for 5 hours)
+    - cron: '0 4 * * *'
     - cron: '0 9 * * *'
   workflow_dispatch: # Allows 1-click manual start anytime from GitHub UI
 
 jobs:
   warmup-session:
     runs-on: ubuntu-latest
-    timeout-minutes: 300 # Safety limit - allows up to 5 hours of continuous human-paced session
+    timeout-minutes: 360 # Max safety limit allowed by GitHub Actions (6 hours)
     permissions:
       contents: write
 
@@ -43,7 +43,7 @@ jobs:
           WARMUP_ENV: ${{ secrets.WARMUP_ENV }}
           WARMUP_ENV_DATA: ${{ secrets.WARMUP_ENV }}
         run: |
-          python engine.py --session 3.5
+          python engine.py --session 5.0
 
       - name: Final State Sync to Repository
         if: always()

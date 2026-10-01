@@ -542,20 +542,21 @@ def git_sync_state(commit_msg="Auto-update warmup state [skip ci]"):
     except Exception as e:
         print(f"  ⚠️ Git sync notice: {e}", flush=True)
 
-def run_session(max_hours=4.0):
+def run_session(max_hours=5.0):
     """
-    Keeps running on GitHub Actions runner for the duration of the daylight session.
-    - Stays awake and active throughout the session (no reliance on 30-min wakeups).
-    - Paces conversation turns with genuine, natural human delays (15 to 30 minutes).
-    - Eliminates robotic quick replies.
+    Keeps running on GitHub Actions runner for a full daylight working shift (5 hours).
+    - Morning Shift: 09:30 AM to 02:30 PM IST (5 hrs)
+    - Afternoon Shift: 02:30 PM to 07:30 PM IST (5 hrs)
+    - Paces conversation turns with genuine, natural human delays (50 to 90 minutes).
+    - Eliminates rushed bursts and quick replies.
     - Saves and pushes state to Git after every single transaction.
     """
     start_time = time.time()
     max_seconds = max_hours * 3600
 
     print("=" * 70, flush=True)
-    print(f"🚀 [BAZX WARMUP LIVE SESSION STARTED] {get_current_time().strftime('%Y-%m-%d %H:%M:%S IST')}", flush=True)
-    print(f"   Target Duration: {max_hours:.1f} hours | Pacing Jitter: 15-30 mins | Daylight Only", flush=True)
+    print(f"🚀 [BAZX WARMUP LIVE SHIFT STARTED] {get_current_time().strftime('%Y-%m-%d %H:%M:%S IST')}", flush=True)
+    print(f"   Target Duration: {max_hours:.1f} hours | Pacing Jitter: 50-90 mins | Daylight Only", flush=True)
     print("=" * 70, flush=True)
 
     while True:
@@ -564,12 +565,12 @@ def run_session(max_hours=4.0):
 
         # 1. Check max session duration
         if elapsed >= max_seconds:
-            print(f"\n🏁 Session time limit reached ({max_hours:.1f} hrs). Ending session cleanly.", flush=True)
+            print(f"\n🏁 Shift time limit reached ({max_hours:.1f} hrs). Ending shift cleanly.", flush=True)
             break
 
         # 2. Check daylight business hours (09:00 - 19:30 IST)
         if not is_business_hours():
-            print(f"\n🌙 Outside business hours ({now.strftime('%H:%M')} IST - active: 09:00 - 19:30 IST). Ending session cleanly.", flush=True)
+            print(f"\n🌙 Outside business hours ({now.strftime('%H:%M')} IST - active: 09:00 - 19:30 IST). Ending shift cleanly.", flush=True)
             break
 
         # 3. Pull latest state from remote in case of external commits
@@ -660,11 +661,11 @@ def run_session(max_hours=4.0):
                 save_state(state)
                 git_sync_state(f"Auto-update warmup: Track {track_id} Turn {stage_idx+1} [skip ci]")
 
-                # Human pacing delay before next interaction (15 to 30 minutes)
-                pacing_delay = random.randint(900, 1800)
+                # Full 50 to 90 minutes realistic agency workday gap
+                pacing_delay = random.randint(3000, 5400)
                 mins = pacing_delay // 60
                 secs = pacing_delay % 60
-                print(f"\n☕ [HUMAN PACING GAP] Pausing {mins}m {secs}s before next interaction to simulate authentic agency workflow...", flush=True)
+                print(f"\n☕ [HUMAN PACING GAP] Pausing {mins}m {secs}s before next interaction to simulate authentic agency workday rhythm...", flush=True)
 
                 time_slept = 0
                 while time_slept < pacing_delay:
