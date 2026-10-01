@@ -2,9 +2,9 @@ name: 14-Day Elite Warmup Engine
 
 on:
   schedule:
-    # Runs at minute 15 & 45 of every hour between 04:00 UTC and 14:00 UTC (09:45 AM to 07:45 PM IST daylight hours)
-    # Offsetting from minute 0 avoids GitHub Actions top-of-hour shared runner queuing delays
-    - cron: '15,45 4-14 * * *'
+    # Explicit separate cron schedules for 100% GitHub Actions parser compatibility
+    - cron: '15 4-14 * * *'
+    - cron: '45 4-14 * * *'
   workflow_dispatch: # Allows manual trigger button anytime
 
 jobs:
