@@ -2,10 +2,11 @@ name: 14-Day Elite Warmup Engine (Autonomous Session)
 
 on:
   schedule:
-    # 2 core daylight working shifts per day (mimicking an authentic agency working schedule):
-    # Shift 1 (Morning):   04:00 UTC = 09:30 AM IST (runs for 5 hours)
-    # Shift 2 (Afternoon): 09:00 UTC = 02:30 PM IST (runs for 5 hours)
-    - cron: '0 4 * * *'
+    # PRIMARY: Single full-day shift covering entire IST daylight window
+    # 03:30 UTC = 09:00 AM IST → runs for up to 10.5 hours (till 07:30 PM IST)
+    - cron: '30 3 * * *'
+    # BACKUP: If morning cron gets skipped by GitHub, this catches up
+    # 09:00 UTC = 02:30 PM IST → engine auto-calculates remaining daylight hours
     - cron: '0 9 * * *'
   workflow_dispatch: # Allows 1-click manual start anytime from GitHub UI
 
@@ -43,7 +44,7 @@ jobs:
           WARMUP_ENV: ${{ secrets.WARMUP_ENV }}
           WARMUP_ENV_DATA: ${{ secrets.WARMUP_ENV }}
         run: |
-          python engine.py --session 5.0
+          python engine.py --session auto
 
       - name: Final State Sync to Repository
         if: always()

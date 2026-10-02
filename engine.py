@@ -542,21 +542,30 @@ def git_sync_state(commit_msg="Auto-update warmup state [skip ci]"):
     except Exception as e:
         print(f"  ⚠️ Git sync notice: {e}", flush=True)
 
-def run_session(max_hours=5.0):
+def run_session(max_hours="auto"):
     """
-    Keeps running on GitHub Actions runner for a full daylight working shift (5 hours).
-    - Morning Shift: 09:30 AM to 02:30 PM IST (5 hrs)
-    - Afternoon Shift: 02:30 PM to 07:30 PM IST (5 hrs)
-    - Paces conversation turns with genuine, natural human delays (50 to 90 minutes).
+    Keeps running on GitHub Actions runner for the full daylight working window.
+    - 'auto' mode: calculates remaining hours until 19:30 IST (capped at 5.9h for GitHub's 6h limit)
+    - Paces conversation turns with genuine, natural human delays (40 to 70 minutes).
     - Eliminates rushed bursts and quick replies.
     - Saves and pushes state to Git after every single transaction.
     """
     start_time = time.time()
+
+    if max_hours == "auto":
+        now = get_current_time()
+        end_of_day = now.replace(hour=19, minute=30, second=0, microsecond=0)
+        remaining_hours = max(0.5, (end_of_day - now).total_seconds() / 3600)
+        max_hours = min(remaining_hours, 5.9)  # GitHub Actions max ~6 hours
+        print(f"🔄 Auto-duration: {remaining_hours:.1f}h remaining till 19:30 IST → capped session: {max_hours:.1f}h", flush=True)
+    else:
+        max_hours = float(max_hours)
+
     max_seconds = max_hours * 3600
 
     print("=" * 70, flush=True)
     print(f"🚀 [BAZX WARMUP LIVE SHIFT STARTED] {get_current_time().strftime('%Y-%m-%d %H:%M:%S IST')}", flush=True)
-    print(f"   Target Duration: {max_hours:.1f} hours | Pacing Jitter: 50-90 mins | Daylight Only", flush=True)
+    print(f"   Target Duration: {max_hours:.1f} hours | Pacing Jitter: 40-70 mins | Daylight Only", flush=True)
     print("=" * 70, flush=True)
 
     while True:
@@ -661,8 +670,8 @@ def run_session(max_hours=5.0):
                 save_state(state)
                 git_sync_state(f"Auto-update warmup: Track {track_id} Turn {stage_idx+1} [skip ci]")
 
-                # Full 50 to 90 minutes realistic agency workday gap
-                pacing_delay = random.randint(3000, 5400)
+                # Full 40 to 70 minutes realistic agency workday gap
+                pacing_delay = random.randint(2400, 4200)
                 mins = pacing_delay // 60
                 secs = pacing_delay % 60
                 print(f"\n☕ [HUMAN PACING GAP] Pausing {mins}m {secs}s before next interaction to simulate authentic agency workday rhythm...", flush=True)
@@ -696,7 +705,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         cmd = sys.argv[1]
         if cmd == "--session":
-            hours = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
+            hours = sys.argv[2] if len(sys.argv) > 2 else "auto"
             run_session(max_hours=hours)
         elif cmd == "--test-send":
             run_test_send()
