@@ -2,13 +2,24 @@ name: 14-Day Elite Warmup Engine (Autonomous Session)
 
 on:
   schedule:
-    # PRIMARY: Single full-day shift covering entire IST daylight window
-    # 03:30 UTC = 09:00 AM IST → runs for up to 10.5 hours (till 07:30 PM IST)
+    # STAGGERED MORNING TRIGGERS — GitHub cron is unreliable on public repos,
+    # so we fire 3 attempts in the morning window. The engine's 'auto' mode
+    # ensures only 1 session runs meaningfully (later triggers exit early if
+    # business hours are already over or session would be too short).
+    # Attempt 1: 03:00 UTC = 08:30 AM IST
+    - cron: '0 3 * * *'
+    # Attempt 2: 03:30 UTC = 09:00 AM IST
     - cron: '30 3 * * *'
-    # BACKUP: If morning cron gets skipped by GitHub, this catches up
-    # 09:00 UTC = 02:30 PM IST → engine auto-calculates remaining daylight hours
+    # Attempt 3: 04:00 UTC = 09:30 AM IST
+    - cron: '0 4 * * *'
+    # BACKUP AFTERNOON: If ALL morning triggers get skipped
+    # 09:00 UTC = 02:30 PM IST
     - cron: '0 9 * * *'
   workflow_dispatch: # Allows 1-click manual start anytime from GitHub UI
+
+concurrency:
+  group: warmup-engine
+  cancel-in-progress: false
 
 jobs:
   warmup-session:
@@ -20,6 +31,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5

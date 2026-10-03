@@ -96,6 +96,15 @@ for k in ["HERO"] + [f"SEED_{i}" for i in range(1, 9)]:
     if em:
         FLEET_EMAILS.add(em.lower())
 
+def mask_email(addr):
+    """Masks email for safe logging: raj@bazxlabs.com -> r***@baz***"""
+    if not addr or "@" not in addr:
+        return "***"
+    local, domain = addr.split("@", 1)
+    masked_local = local[0] + "***" if len(local) > 0 else "***"
+    masked_domain = domain[:3] + "***" if len(domain) > 3 else "***"
+    return f"{masked_local}@{masked_domain}"
+
 # ------------------------------------------------------------------------------
 # 2. STATE MANAGER
 # ------------------------------------------------------------------------------
@@ -206,12 +215,12 @@ def process_account_mailbox(email_addr, password):
                             sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
 
                             if sender in FLEET_EMAILS:
-                                print(f"  🚨 [SPAM RESCUE] Trapped email from {sender} in {email_addr}'s Spam! Rescuing...", flush=True)
+                                print(f"  🚨 [SPAM RESCUE] Trapped email from {mask_email(sender)} in {mask_email(email_addr)}'s Spam! Rescuing...", flush=True)
                                 m.copy(msg_id, "INBOX")
                                 m.store(msg_id, "+FLAGS", "(\\Deleted)")
                                 m.expunge()
                                 rescued_count += 1
-                                print(f"  ✨ [RESCUED] Moved to INBOX and verified 'Not Spam' signal for {email_addr}!", flush=True)
+                                print(f"  ✨ [RESCUED] Moved to INBOX for {mask_email(email_addr)}!", flush=True)
                     except Exception:
                         pass
 
@@ -229,12 +238,12 @@ def process_account_mailbox(email_addr, password):
                         sender = email.utils.parseaddr(parsed.get("From", ""))[1].lower()
                         if sender in FLEET_EMAILS:
                             m.store(msg_id, "+FLAGS", "(\\Seen \\Flagged IMPORTANT)")
-                            print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {sender} to {email_addr}", flush=True)
+                            print(f"  ⭐ [ENGAGEMENT] Starred and Marked Important: email from {mask_email(sender)} to {mask_email(email_addr)}", flush=True)
                 except Exception:
                     pass
 
     except Exception as e:
-        print(f"  ⚠️ Mailbox check notice for {email_addr}: {e}", flush=True)
+        print(f"  ⚠️ Mailbox check notice for {mask_email(email_addr)}: {e}", flush=True)
     finally:
         if m:
             try:
@@ -550,12 +559,20 @@ def run_session(max_hours="auto"):
     - Eliminates rushed bursts and quick replies.
     - Saves and pushes state to Git after every single transaction.
     """
+    # Early exit: don't waste runner time if business hours are already over
+    if not is_business_hours():
+        print(f"🌙 Outside business hours ({get_current_time().strftime('%H:%M')} IST). No session needed. Exiting.", flush=True)
+        return
+
     start_time = time.time()
 
     if max_hours == "auto":
         now = get_current_time()
         end_of_day = now.replace(hour=19, minute=30, second=0, microsecond=0)
-        remaining_hours = max(0.5, (end_of_day - now).total_seconds() / 3600)
+        remaining_hours = (end_of_day - now).total_seconds() / 3600
+        if remaining_hours < 0.5:
+            print(f"⏰ Only {remaining_hours:.1f}h left in business day. Too short for a session. Exiting.", flush=True)
+            return
         max_hours = min(remaining_hours, 5.9)  # GitHub Actions max ~6 hours
         print(f"🔄 Auto-duration: {remaining_hours:.1f}h remaining till 19:30 IST → capped session: {max_hours:.1f}h", flush=True)
     else:
@@ -633,8 +650,8 @@ def run_session(max_hours="auto"):
                 body = spin(turn["body"])
 
                 print(f"\n📨 [DISPATCHING EMAIL] Track {track_id}: {track_def['name']}", flush=True)
-                print(f"  From: {sender_email}", flush=True)
-                print(f"  To:   {recip_email}", flush=True)
+                print(f"  From: {mask_email(sender_email)}", flush=True)
+                print(f"  To:   {mask_email(recip_email)}", flush=True)
                 print(f"  Subj: {subj}", flush=True)
                 print(f"  Turn: {stage_idx + 1} of {len(stages)} (Stage {turn['stage']})", flush=True)
 
