@@ -1,8 +1,8 @@
 {
   "day": 5,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-03T18:36:43.588295+05:30",
-  "total_sent": 21,
+  "last_tick": "2026-10-04T14:52:14.135200+05:30",
+  "total_sent": 22,
   "total_received": 0,
   "total_rescued": 4,
   "threads": {
@@ -11,11 +11,11 @@
       "name": "Webhook Buffer & Redis Queue",
       "direction": "inbound",
       "partner_key": "SEED_1",
-      "stage_idx": 6,
+      "stage_idx": 7,
       "subject": "Quick question regarding webhook drops",
-      "last_msg_id": "<179101929689.2321.8918690060833839598@bazxlabs.com>",
-      "last_timestamp": "2026-10-03T14:51:31.199385+05:30",
-      "send_after": "2026-10-04T09:15:00+05:30",
+      "last_msg_id": "<179110573315.2305.6287496345976555845@gmail.com>",
+      "last_timestamp": "2026-10-04T14:52:09.193164+05:30",
+      "send_after": "2026-10-05T02:15:09.193164+05:30",
       "status": "ready_to_start",
       "history": []
     },
