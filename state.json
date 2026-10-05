@@ -1,5 +1,5 @@
 {
-  "day": 6,
+  "day": 7,
   "started_at": "2026-09-30T13:50:55.216555",
   "last_tick": "2026-10-05T19:29:37.359430+05:30",
   "total_sent": 32,
@@ -15,7 +15,7 @@
       "subject": "Quick question regarding webhook drops",
       "last_msg_id": "<179120203313.2365.15150250882709308470@bazxlabs.com>",
       "last_timestamp": "2026-10-05T17:37:05.606366+05:30",
-      "send_after": "2026-10-05T17:49:05.606366+05:30",
+      "send_after": "2026-10-06T13:45:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -28,7 +28,7 @@
       "subject": "Perplexity citation tracker - Python script",
       "last_msg_id": "<179120877568.2365.1877571267426205560@gmail.com>",
       "last_timestamp": "2026-10-05T19:29:27.535201+05:30",
-      "send_after": "2026-10-06T02:29:27.535201+05:30",
+      "send_after": "2026-10-06T15:45:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -41,7 +41,7 @@
       "subject": "Ad budget anomaly monitor - Python script",
       "last_msg_id": "<179111881230.2305.10121289107145560303@bazxlabs.com>",
       "last_timestamp": "2026-10-04T18:30:10.370100+05:30",
-      "send_after": "2026-10-05T14:45:00+05:30",
+      "send_after": "2026-10-06T09:15:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -54,7 +54,7 @@
       "subject": "Real-time indexation checker",
       "last_msg_id": "<179112142695.2305.16522862633327230430@gmail.com>",
       "last_timestamp": "2026-10-04T19:13:44.727178+05:30",
-      "send_after": "2026-10-05T15:45:00+05:30",
+      "send_after": "2026-10-06T10:00:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -67,7 +67,7 @@
       "subject": "HubSpot webhook sync question",
       "last_msg_id": "<179119454972.2365.924947969082119121@gmail.com>",
       "last_timestamp": "2026-10-05T15:32:24.877403+05:30",
-      "send_after": "2026-10-05T15:40:24.877403+05:30",
+      "send_after": "2026-10-06T11:45:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -80,7 +80,7 @@
       "subject": "High-volume Shopify catalog updater",
       "last_msg_id": "<179119857406.2365.5156349231275709354@gmail.com>",
       "last_timestamp": "2026-10-05T16:39:20.746965+05:30",
-      "send_after": "2026-10-05T19:52:20.746965+05:30",
+      "send_after": "2026-10-06T12:45:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -93,7 +93,7 @@
       "subject": "High-throughput DICOM processing question",
       "last_msg_id": "<179120613708.2365.5365663464741728683@gmail.com>",
       "last_timestamp": "2026-10-05T18:45:30.763483+05:30",
-      "send_after": "2026-10-05T20:47:30.763483+05:30",
+      "send_after": "2026-10-06T14:45:00+05:30",
       "status": "ready_to_start",
       "history": []
     },
@@ -106,7 +106,7 @@
       "subject": "STDF wafer test log parser inquiry",
       "last_msg_id": "<179111622449.2305.17716205611837100112@gmail.com>",
       "last_timestamp": "2026-10-04T17:47:02.944917+05:30",
-      "send_after": "2026-10-05T13:45:00+05:30",
+      "send_after": "2026-10-06T10:45:00+05:30",
       "status": "ready_to_start",
       "history": []
     }
