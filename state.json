@@ -1,8 +1,8 @@
 {
   "day": 7,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-07T18:08:13.074189+05:30",
-  "total_sent": 41,
+  "last_tick": "2026-10-07T19:14:32.527295+05:30",
+  "total_sent": 42,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -37,11 +37,11 @@
       "name": "Live Ad Spend Velocity & Anomaly Alerter",
       "direction": "inbound",
       "partner_key": "SEED_3",
-      "stage_idx": 5,
+      "stage_idx": 6,
       "subject": "Ad budget anomaly monitor - Python script",
-      "last_msg_id": "<179128007361.2316.9953726322404027432@gmail.com>",
-      "last_timestamp": "2026-10-06T15:17:51.346671+05:30",
-      "send_after": "2026-10-06T18:25:51.346671+05:30",
+      "last_msg_id": "<179138067126.2326.17733819295662483317@bazxlabs.com>",
+      "last_timestamp": "2026-10-07T19:14:28.362061+05:30",
+      "send_after": "2026-10-07T20:32:28.362061+05:30",
       "status": "ready_to_start",
       "history": []
     },
