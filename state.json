@@ -1,8 +1,8 @@
 {
   "day": 9,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-08T16:25:36.629157+05:30",
-  "total_sent": 44,
+  "last_tick": "2026-10-08T17:26:44.580024+05:30",
+  "total_sent": 45,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -76,11 +76,11 @@
       "name": "High-Concurrency Shopify Feed Sync",
       "direction": "outbound",
       "partner_key": "SEED_6",
-      "stage_idx": 3,
+      "stage_idx": 4,
       "subject": "High-volume Shopify catalog updater",
-      "last_msg_id": "<179129377504.2316.4317845888060863590@bazxlabs.com>",
-      "last_timestamp": "2026-10-06T19:05:54.487101+05:30",
-      "send_after": "2026-10-08T10:45:00+05:30",
+      "last_msg_id": "<179146060289.2379.1325898437640771661@gmail.com>",
+      "last_timestamp": "2026-10-08T17:26:21.964898+05:30",
+      "send_after": "2026-10-08T20:13:21.964898+05:30",
       "status": "ready_to_start",
       "history": []
     },
