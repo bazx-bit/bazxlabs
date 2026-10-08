@@ -1,8 +1,8 @@
 {
   "day": 9,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-08T18:19:46.263905+05:30",
-  "total_sent": 46,
+  "last_tick": "2026-10-08T19:19:44.716188+05:30",
+  "total_sent": 47,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -89,11 +89,11 @@
       "name": "Medical Imaging PACS & DICOM Pipeline",
       "direction": "outbound",
       "partner_key": "SEED_7",
-      "stage_idx": 5,
+      "stage_idx": 6,
       "subject": "High-throughput DICOM processing question",
-      "last_msg_id": "<179136963985.2326.13187745301494613011@bazxlabs.com>",
-      "last_timestamp": "2026-10-07T16:10:36.129227+05:30",
-      "send_after": "2026-10-08T12:45:00+05:30",
+      "last_msg_id": "<179146738337.2379.16483592648368568372@gmail.com>",
+      "last_timestamp": "2026-10-08T19:19:36.653526+05:30",
+      "send_after": "2026-10-08T20:56:36.653526+05:30",
       "status": "ready_to_start",
       "history": []
     },
