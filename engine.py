@@ -607,9 +607,12 @@ def run_session(max_hours="auto"):
 
         state = load_state()
 
-        # 4. Check eligible threads
+        # 4. Check eligible threads (ignoring tracks that completed all 10 stages)
         eligible = []
         for t_id, t in state["threads"].items():
+            track_def = TRACKS.get(t["track_id"])
+            if track_def and t.get("stage_idx", 0) >= len(track_def["stages"]):
+                continue
             s_after = t.get("send_after")
             if s_after and now >= parse_iso_time(s_after):
                 eligible.append(t)
@@ -673,11 +676,16 @@ def run_session(max_hours="auto"):
                     thread_to_run["last_timestamp"] = now.isoformat()
                     state["total_sent"] += 1
 
-                    # Next turn delay (human delay)
-                    next_delay_m = calculate_human_delay()
-                    next_send_after = now + timedelta(minutes=next_delay_m)
-                    thread_to_run["send_after"] = next_send_after.isoformat()
-                    print(f"  ⏱️ Next turn in Track {track_id} scheduled for {next_send_after.strftime('%Y-%m-%d %H:%M:%S IST')} (Delay: {next_delay_m} mins)", flush=True)
+                    if thread_to_run["stage_idx"] >= len(stages):
+                        thread_to_run["status"] = "completed"
+                        thread_to_run["send_after"] = None
+                        print(f"  🎉 Track {track_id} ({track_def['name']}) has COMPLETED all {len(stages)} turns!", flush=True)
+                    else:
+                        # Next turn delay (human delay)
+                        next_delay_m = calculate_human_delay()
+                        next_send_after = now + timedelta(minutes=next_delay_m)
+                        thread_to_run["send_after"] = next_send_after.isoformat()
+                        print(f"  ⏱️ Next turn in Track {track_id} scheduled for {next_send_after.strftime('%Y-%m-%d %H:%M:%S IST')} (Delay: {next_delay_m} mins)", flush=True)
 
                 except Exception as e:
                     print(f"  ❌ SMTP Send error for Track {track_id}: {e}", flush=True)
@@ -703,8 +711,12 @@ def run_session(max_hours="auto"):
                         print(f"   ⏳ Pacing heartbeat: {remaining // 60}m remaining until next interaction...", flush=True)
                 continue
 
-        # If no email is due right now, sleep until the earliest scheduled turn
-        pending = [parse_iso_time(t["send_after"]) for t in state["threads"].values() if t.get("send_after")]
+        # If no email is due right now, sleep until the earliest scheduled turn of active tracks
+        pending = [
+            parse_iso_time(t["send_after"])
+            for t in state["threads"].values()
+            if t.get("send_after") and t.get("stage_idx", 0) < len(TRACKS.get(t["track_id"], {}).get("stages", []))
+        ]
         if pending:
             earliest = min(pending)
             wait_s = max(60, int((earliest - now).total_seconds()))
