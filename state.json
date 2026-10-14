@@ -1,8 +1,8 @@
 {
   "day": 12,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-14T15:31:27.511555+05:30",
-  "total_sent": 71,
+  "last_tick": "2026-10-14T16:33:56.981821+05:30",
+  "total_sent": 72,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -24,12 +24,12 @@
       "name": "AI Overviews & Perplexity Citation Tracker",
       "direction": "inbound",
       "partner_key": "SEED_2",
-      "stage_idx": 9,
+      "stage_idx": 10,
       "subject": "Perplexity citation tracker - Python script",
-      "last_msg_id": "<179189009692.2329.9041423970683754839@gmail.com>",
-      "last_timestamp": "2026-10-13T16:43:51.960880+05:30",
-      "send_after": "2026-10-13T16:52:51.960880+05:30",
-      "status": "ready_to_start",
+      "last_msg_id": "<179197583353.2103.1411838719815456304@bazxlabs.com>",
+      "last_timestamp": "2026-10-14T16:33:38.795362+05:30",
+      "send_after": null,
+      "status": "completed",
       "history": []
     },
     "3": {
