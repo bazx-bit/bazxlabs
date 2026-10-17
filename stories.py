@@ -1027,3 +1027,11 @@ TRACKS = {
         ]
     }
 }
+
+# Support both int and str keys for bulletproof lookups
+for _k in list(TRACKS.keys()):
+    try:
+        TRACKS[int(_k)] = TRACKS[_k]
+        TRACKS[str(_k)] = TRACKS[_k]
+    except Exception:
+        pass

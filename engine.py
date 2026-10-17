@@ -405,7 +405,7 @@ def run_tick(force=False):
     rescued = check_mailboxes(["HERO", partner_key])
     state["total_rescued"] += rescued
     stage_idx = thread_to_run["stage_idx"]
-    track_def = TRACKS[track_id]
+    track_def = TRACKS.get(track_id) or TRACKS.get(int(track_id)) or TRACKS.get(str(track_id))
     stages = track_def["stages"]
 
     if stage_idx >= len(stages):
@@ -622,7 +622,7 @@ def run_session(max_hours="auto"):
             thread_to_run = sorted(eligible, key=lambda x: parse_iso_time(x["send_after"]))[0]
             track_id = thread_to_run["track_id"]
             partner_key = thread_to_run.get("partner_key", "SEED_1")
-            track_def = TRACKS[track_id]
+            track_def = TRACKS.get(track_id) or TRACKS.get(int(track_id)) or TRACKS.get(str(track_id))
             stage_idx = thread_to_run["stage_idx"]
             stages = track_def["stages"]
 
