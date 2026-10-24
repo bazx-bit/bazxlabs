@@ -1,8 +1,8 @@
 {
   "day": 16,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-24T14:24:35.757641+05:30",
-  "total_sent": 125,
+  "last_tick": "2026-10-24T15:09:00.227604+05:30",
+  "total_sent": 126,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -50,11 +50,11 @@
       "name": "Sitemap & Real-Time Indexation Monitor",
       "direction": "inbound",
       "partner_key": "SEED_4",
-      "stage_idx": 16,
+      "stage_idx": 17,
       "subject": "Real-time indexation checker",
-      "last_msg_id": "<179275321235.2321.15929913887942618031@bazxlabs.com>",
-      "last_timestamp": "2026-10-23T16:30:01.192595+05:30",
-      "send_after": "2026-10-23T18:08:01.192595+05:30",
+      "last_msg_id": "<179283473906.2284.13256781003368292169@gmail.com>",
+      "last_timestamp": "2026-10-24T15:08:47.695158+05:30",
+      "send_after": "2026-10-24T15:20:47.695158+05:30",
       "status": "ready_to_start",
       "history": []
     },
