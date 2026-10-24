@@ -1,8 +1,8 @@
 {
   "day": 16,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-24T16:14:01.952078+05:30",
-  "total_sent": 127,
+  "last_tick": "2026-10-24T16:58:00.067541+05:30",
+  "total_sent": 128,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -63,11 +63,11 @@
       "name": "HubSpot & CRM Bi-directional Sync",
       "direction": "outbound",
       "partner_key": "SEED_5",
-      "stage_idx": 15,
+      "stage_idx": 16,
       "subject": "HubSpot webhook sync question",
-      "last_msg_id": "<179274644535.2321.8853397569552213942@bazxlabs.com>",
-      "last_timestamp": "2026-10-23T14:36:59.071528+05:30",
-      "send_after": "2026-10-23T21:33:59.071528+05:30",
+      "last_msg_id": "<179284127867.2284.8556822490655868844@gmail.com>",
+      "last_timestamp": "2026-10-24T16:57:48.089890+05:30",
+      "send_after": "2026-10-24T19:05:48.089890+05:30",
       "status": "ready_to_start",
       "history": []
     },
