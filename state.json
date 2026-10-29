@@ -1,8 +1,8 @@
 {
   "day": 16,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-29T14:53:59.617788+05:30",
-  "total_sent": 156,
+  "last_tick": "2026-10-29T15:47:54.736280+05:30",
+  "total_sent": 157,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -102,12 +102,12 @@
       "name": "Semiconductor ATE STDF Wafer Test Log Parser",
       "direction": "outbound",
       "partner_key": "SEED_8",
-      "stage_idx": 19,
+      "stage_idx": 20,
       "subject": "STDF wafer test log parser inquiry",
-      "last_msg_id": "<179319124771.2544.3203918730686327214@bazxlabs.com>",
-      "last_timestamp": "2026-10-28T18:10:38.555907+05:30",
-      "send_after": "2026-10-28T19:26:38.555907+05:30",
-      "status": "ready_to_start",
+      "last_msg_id": "<179326907357.2378.11793530516785594897@gmail.com>",
+      "last_timestamp": "2026-10-29T15:47:40.963092+05:30",
+      "send_after": null,
+      "status": "completed",
       "history": []
     }
   },
