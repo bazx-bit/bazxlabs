@@ -428,10 +428,16 @@ def run_tick(force=False):
     # Prepare Subject & Body with deep spintax
     raw_subject = turn["subject"]
     if "{subject}" in raw_subject:
-        subject = raw_subject.replace("{subject}", thread_to_run["subject"] or track_def["name"])
+        subject = raw_subject.replace("{subject}", thread_to_run.get("subject") or track_def["name"])
+        in_reply_to_id = thread_to_run.get("last_msg_id")
+        references_id = thread_to_run.get("last_msg_id")
     else:
+        # BRAND NEW THREAD IN GMAIL!
         subject = spin(raw_subject)
         thread_to_run["subject"] = subject
+        in_reply_to_id = None
+        references_id = None
+        thread_to_run["last_msg_id"] = None
 
     body = spin(turn["body"])
 
@@ -448,8 +454,8 @@ def run_tick(force=False):
             to_email=recip_email,
             subject=subject,
             body_text=body,
-            in_reply_to=thread_to_run.get("last_msg_id"),
-            references=thread_to_run.get("last_msg_id")
+            in_reply_to=in_reply_to_id,
+            references=references_id
         )
         print(f"  ✅ Sent successfully! Message-ID: {msg_id}")
 
@@ -607,12 +613,9 @@ def run_session(max_hours="auto"):
 
         state = load_state()
 
-        # 4. Check eligible threads (ignoring tracks that completed all 10 stages)
+        # 4. Check eligible threads
         eligible = []
         for t_id, t in state["threads"].items():
-            track_def = TRACKS.get(t["track_id"])
-            if track_def and t.get("stage_idx", 0) >= len(track_def["stages"]):
-                continue
             s_after = t.get("send_after")
             if s_after and now >= parse_iso_time(s_after):
                 eligible.append(t)
@@ -646,10 +649,16 @@ def run_session(max_hours="auto"):
                 # Spintax formatting
                 raw_subj = turn["subject"]
                 if "{subject}" in raw_subj:
-                    subj = raw_subj.replace("{subject}", thread_to_run["subject"] or track_def["name"])
+                    subj = raw_subj.replace("{subject}", thread_to_run.get("subject") or track_def["name"])
+                    in_reply_to_id = thread_to_run.get("last_msg_id")
+                    references_id = thread_to_run.get("last_msg_id")
                 else:
+                    # BRAND NEW THREAD IN GMAIL!
                     subj = spin(raw_subj)
                     thread_to_run["subject"] = subj
+                    in_reply_to_id = None
+                    references_id = None
+                    thread_to_run["last_msg_id"] = None
                 body = spin(turn["body"])
 
                 print(f"\n📨 [DISPATCHING EMAIL] Track {track_id}: {track_def['name']}", flush=True)
@@ -665,8 +674,8 @@ def run_session(max_hours="auto"):
                         recip_email,
                         subj,
                         body,
-                        in_reply_to=thread_to_run.get("last_msg_id"),
-                        references=thread_to_run.get("last_msg_id")
+                        in_reply_to=in_reply_to_id,
+                        references=references_id
                     )
                     print(f"  ✅ Sent successfully! Message-ID: {msg_id}", flush=True)
 
@@ -677,9 +686,17 @@ def run_session(max_hours="auto"):
                     state["total_sent"] += 1
 
                     if thread_to_run["stage_idx"] >= len(stages):
-                        thread_to_run["status"] = "completed"
-                        thread_to_run["send_after"] = None
-                        print(f"  🎉 Track {track_id} ({track_def['name']}) has COMPLETED all {len(stages)} turns!", flush=True)
+                        # PERPETUAL AUTONOMOUS CYCLE ROLLOVER:
+                        # Restarts track with a fresh thread and natural multi-day gap
+                        thread_to_run["stage_idx"] = 0
+                        thread_to_run["cycle"] = thread_to_run.get("cycle", 1) + 1
+                        thread_to_run["last_msg_id"] = None
+                        thread_to_run["subject"] = None
+                        thread_to_run["status"] = "ready_to_start"
+                        restart_delay_m = random.randint(1440, 4320)  # 1 to 3 days
+                        next_send_after = now + timedelta(minutes=restart_delay_m)
+                        thread_to_run["send_after"] = next_send_after.isoformat()
+                        print(f"  🔄 Track {track_id} completed full cycle! Rolling over to Cycle {thread_to_run['cycle']} (Fresh thread scheduled for {next_send_after.strftime('%Y-%m-%d %H:%M IST')})", flush=True)
                     else:
                         # Next turn delay (human delay)
                         next_delay_m = calculate_human_delay()
@@ -711,11 +728,11 @@ def run_session(max_hours="auto"):
                         print(f"   ⏳ Pacing heartbeat: {remaining // 60}m remaining until next interaction...", flush=True)
                 continue
 
-        # If no email is due right now, sleep until the earliest scheduled turn of active tracks
+        # If no email is due right now, sleep until the earliest scheduled turn
         pending = [
             parse_iso_time(t["send_after"])
             for t in state["threads"].values()
-            if t.get("send_after") and t.get("stage_idx", 0) < len(TRACKS.get(t["track_id"], {}).get("stages", []))
+            if t.get("send_after")
         ]
         if pending:
             earliest = min(pending)
@@ -724,7 +741,7 @@ def run_session(max_hours="auto"):
             print(f"\n⏳ No email due right now. Next due at {earliest.strftime('%H:%M:%S IST')}. Waiting {wait_s//60}m {wait_s%60}s...", flush=True)
             time.sleep(wait_s)
         else:
-            print("🎉 All 8 tracks completed all stages! Warmup complete.", flush=True)
+            print("⏳ No pending emails scheduled right now.", flush=True)
             break
 
 # ------------------------------------------------------------------------------

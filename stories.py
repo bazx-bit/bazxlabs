@@ -8,7 +8,7 @@ def spin(text: str) -> str:
         text = re.sub(pattern, lambda m: random.choice(m.group(1).split('|')), text)
     return text
 
-# 8 Persistent Project Tracks (Month 1: Initial Sprint + Month 2: Ongoing Engineering Retainers)
+# 8 Persistent Project Tracks (Multi-thread: Discovery Sprint + Engineering Retainer)
 TRACKS = {
     "1": {
         "partner_key": "SEED_1",
@@ -78,7 +78,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "seed",
-                "subject": "Re: {subject}",
+                "subject": "{Q4 Engineering Retainer - Redis Webhook Ingestion|Retainer kickoff - Ingestion Infrastructure Telemetry|Production Redis Retainer Setup}",
                 "body": "{Hey|Hi} Raj,\n\nPleased to confirm our legal department finalized the retainer paperwork this morning. I have invited your GitHub handle to our private ingestion infrastructure repository on GitLab.\n\nOur current Redis cluster runs on three AWS nodes with TLS enabled across production VPCs. Whenever you have bandwidth this afternoon, could you inspect our current connection pool configurations and recommend whether we should introduce Prometheus exporter metrics for buffer depth monitoring? We want to maintain full visibility before next week's traffic surge.\n\n{Best|Cheers},\nRaj"
             },
             {
@@ -205,7 +205,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "seed",
-                "subject": "Re: {subject}",
+                "subject": "{Month Two Retainer Kickoff - AI Overviews & Perplexity|Enterprise Citation Monitoring Expansion|Perplexity & AI Overview Tracking Retainer}",
                 "body": "{Hey|Hi} Raj,\n\nPaperwork for our Month Two engineering retainer has been fully signed by our agency partners. We are eager to expand the citation monitoring framework across fifteen new enterprise accounts this month.\n\nThese enterprise clients require daily tracking across both Google AI Overviews and Perplexity API endpoints. Could you design a headless extraction worker with automated proxy rotation to pull citation URLs and snippet text without hitting rate limits? We need consistent daily reporting across all client verticals.\n\n{Best|Cheers},\nBit"
             },
             {
@@ -332,7 +332,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "seed",
-                "subject": "Re: {subject}",
+                "subject": "{Month Two Engineering Retainer - Ad Spend Velocity|Cross-channel spend anomaly monitor retainer|Ad spend guardrail expansion}",
                 "body": "{Hey|Hi} Raj,\n\nHappy to confirm our executive team approved the Month Two engineering retainer. We have connected our staging environment to live read-only Meta Ads and Google Ads API developer tokens.\n\nOur immediate priority this week is building real-time spend velocity calculations that extrapolate hourly pacing trends and flag runaway campaign budgets before daily caps are breached. Could you review our token configuration? We want to roll this out to our media buyers soon.\n\n{Best|Cheers},\nRaya"
             },
             {
@@ -459,7 +459,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "seed",
-                "subject": "Re: {subject}",
+                "subject": "{Publisher Indexation Retainer Kickoff - Google Search Console|Real-time sitemap indexation monitoring retainer|Search Console API inspection retainer}",
                 "body": "{Hey|Hi} Raj,\n\nExcited to confirm our agency finalized the Month Two engineering retainer agreement. We have provisioned Google Search Console API service account credentials for our eight largest publishing clients.\n\nThese publishers produce hundreds of articles weekly, and real-time indexation verification is critical. Could you construct an automated inspection worker that queries the Google Indexing API with rate-limited token bucket pacing? We want to identify unindexed articles immediately after publication.\n\n{Best|Cheers},\nForgex"
             },
             {
@@ -586,7 +586,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "hero",
-                "subject": "Re: {subject}",
+                "subject": "{Month Two Retainer - HubSpot & CRM Bi-directional Sync|CRM synchronization retainer kickoff|HubSpot webhook integration sprint}",
                 "body": "{Hey|Hi} Forgex Dev,\n\nKicking off our Month Two engineering retainer sprint this morning. I prepared the staging environment for our bi-directional HubSpot and custom CRM integration worker.\n\nI implemented automated webhook signature verification utilizing HubSpot secret keys to ensure every incoming contact event is authentic. Could your team provide our worker with sandbox OAuth credentials so we can begin testing contact property synchronization? We want to verify payload delivery under live load conditions.\n\n{Best|Cheers},\nRaj bazx"
             },
             {
@@ -713,7 +713,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "hero",
-                "subject": "Re: {subject}",
+                "subject": "{Shopify High-Concurrency Inventory Retainer Kickoff|Catalog GraphQL sync retainer sprint|Shopify inventory synchronization retainer}",
                 "body": "{Hey|Hi} Raven,\n\nExcited to kick off our Month Two engineering retainer sprint. I structured our development roadmap to optimize high-concurrency inventory synchronization across your Shopify storefronts.\n\nI built an asynchronous Python worker connecting directly to the Shopify GraphQL Admin API for bulk inventory mutations. Could your team provision custom app API credentials on staging so we can begin benchmarking catalog throughput? We want to ensure sync reliability before peak holiday traffic.\n\n{Best|Cheers},\nRaj bazx"
             },
             {
@@ -840,7 +840,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "hero",
-                "subject": "Re: {subject}",
+                "subject": "{Clinical PACS & DICOM Pipeline Retainer Kickoff|DICOM ingestion & metadata extraction retainer|Medical imaging PACS engineering retainer}",
                 "body": "{Hey|Hi} Bazx Singh,\n\nInitiating our Month Two engineering retainer collaboration this morning. I structured our development plan to optimize high-throughput DICOM metadata extraction across your clinical PACS archives.\n\nI constructed an asynchronous Python parser utilizing PyDICOM with strict HIPAA-compliant PHI anonymization routines. Could your hospital IT leads provision VPN access to the isolated staging PACS archive so we can begin testing scan ingestion? We want to verify extraction latency across multi-slice studies.\n\n{Best|Cheers},\nRaj bazx"
             },
             {
@@ -967,7 +967,7 @@ TRACKS = {
             {
                 "stage": 6,
                 "role": "hero",
-                "subject": "Re: {subject}",
+                "subject": "{ATE STDF Wafer Test Log Retainer Sprint Kickoff|Silicon yield telemetry parser retainer|Semiconductor STDF binary parser engineering retainer}",
                 "body": "{Hey|Hi} Ananaya,\n\nInitiating our Month Two silicon engineering retainer sprint this morning. I structured our development plan to optimize high-throughput automated STDF binary log parsing across your automated test equipment cells.\n\nI developed a C-extension accelerated STDF record parser in Python that extracts parametric test results and binning summaries in sub-minute execution times. Could your test engineering team upload sample multi-site wafer logs to our secure staging server? We want to run performance benchmarks.\n\n{Best|Cheers},\nRaj bazx"
             },
             {
