@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-03T17:08:24.662986+05:30",
-  "total_sent": 162,
+  "last_tick": "2026-11-03T18:11:56.364662+05:30",
+  "total_sent": 163,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -39,11 +39,11 @@
       "name": "Live Ad Spend Velocity & Anomaly Alerter",
       "direction": "inbound",
       "partner_key": "SEED_3",
-      "stage_idx": 0,
-      "subject": null,
-      "last_msg_id": null,
-      "last_timestamp": "2026-10-28T17:10:55.166687+05:30",
-      "send_after": "2026-11-03T16:30:00+05:30",
+      "stage_idx": 1,
+      "subject": "API spend velocity script inquiry",
+      "last_msg_id": "<179370971497.2232.737108174197980454@gmail.com>",
+      "last_timestamp": "2026-11-03T18:11:50.799627+05:30",
+      "send_after": "2026-11-03T21:08:50.799627+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
