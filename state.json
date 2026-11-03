@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-10-30T15:08:29.370832+05:30",
-  "total_sent": 160,
+  "last_tick": "2026-11-03T15:59:00.354866+05:30",
+  "total_sent": 161,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -11,11 +11,11 @@
       "name": "Webhook Buffer & Redis Queue",
       "direction": "inbound",
       "partner_key": "SEED_1",
-      "stage_idx": 0,
-      "subject": null,
-      "last_msg_id": null,
-      "last_timestamp": "2026-10-25T14:43:15.787358+05:30",
-      "send_after": "2026-11-03T10:15:00+05:30",
+      "stage_idx": 1,
+      "subject": "Python webhook buffer question",
+      "last_msg_id": "<179370173825.2232.8751841912525490251@gmail.com>",
+      "last_timestamp": "2026-11-03T15:58:32.034076+05:30",
+      "send_after": "2026-11-03T18:17:32.034076+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
