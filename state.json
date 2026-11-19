@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-19T17:45:47.024482+05:30",
-  "total_sent": 228,
+  "last_tick": "2026-11-19T18:52:21.822804+05:30",
+  "total_sent": 229,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -25,11 +25,11 @@
       "name": "AI Overviews & Perplexity Citation Tracker",
       "direction": "inbound",
       "partner_key": "SEED_2",
-      "stage_idx": 9,
+      "stage_idx": 10,
       "subject": "AI search visibility pipeline",
-      "last_msg_id": "<179492239450.2211.8019022222188383584@gmail.com>",
-      "last_timestamp": "2026-11-17T19:03:10.302535+05:30",
-      "send_after": "2026-11-17T20:49:10.302535+05:30",
+      "last_msg_id": "<179509454060.2492.17756893076734330460@bazxlabs.com>",
+      "last_timestamp": "2026-11-19T18:52:12.314427+05:30",
+      "send_after": "2026-11-19T20:27:12.314427+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
