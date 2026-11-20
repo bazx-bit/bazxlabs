@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-20T16:26:24.874912+05:30",
-  "total_sent": 230,
+  "last_tick": "2026-11-20T17:20:33.477522+05:30",
+  "total_sent": 231,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -11,11 +11,11 @@
       "name": "Webhook Buffer & Redis Queue",
       "direction": "inbound",
       "partner_key": "SEED_1",
-      "stage_idx": 10,
-      "subject": "Python webhook buffer question",
-      "last_msg_id": "<179500025347.2411.11056494896170360199@bazxlabs.com>",
-      "last_timestamp": "2026-11-18T16:40:45.655080+05:30",
-      "send_after": "2026-11-18T16:53:45.655080+05:30",
+      "stage_idx": 11,
+      "subject": "Retainer kickoff - Ingestion Infrastructure Telemetry",
+      "last_msg_id": "<179517543233.2385.3111388470430235864@gmail.com>",
+      "last_timestamp": "2026-11-20T17:20:20.407702+05:30",
+      "send_after": "2026-11-20T19:24:20.407702+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
