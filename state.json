@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-21T17:55:22.898402+05:30",
-  "total_sent": 236,
+  "last_tick": "2026-11-21T18:59:12.669239+05:30",
+  "total_sent": 237,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -25,11 +25,11 @@
       "name": "AI Overviews & Perplexity Citation Tracker",
       "direction": "inbound",
       "partner_key": "SEED_2",
-      "stage_idx": 10,
-      "subject": "AI search visibility pipeline",
-      "last_msg_id": "<179509454060.2492.17756893076734330460@bazxlabs.com>",
-      "last_timestamp": "2026-11-19T18:52:12.314427+05:30",
-      "send_after": "2026-11-19T20:27:12.314427+05:30",
+      "stage_idx": 11,
+      "subject": "Month Two Retainer Kickoff - AI Overviews & Perplexity",
+      "last_msg_id": "<179526775160.2384.15057841827144019606@gmail.com>",
+      "last_timestamp": "2026-11-21T18:59:07.085462+05:30",
+      "send_after": "2026-11-22T01:34:07.085462+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
