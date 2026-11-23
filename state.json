@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-23T17:20:15.795961+05:30",
-  "total_sent": 242,
+  "last_tick": "2026-11-23T18:27:11.922925+05:30",
+  "total_sent": 243,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -39,11 +39,11 @@
       "name": "Live Ad Spend Velocity & Anomaly Alerter",
       "direction": "inbound",
       "partner_key": "SEED_3",
-      "stage_idx": 11,
+      "stage_idx": 12,
       "subject": "Month Two Engineering Retainer - Ad Spend Velocity",
-      "last_msg_id": "<179525759658.2384.14893744343408023828@gmail.com>",
-      "last_timestamp": "2026-11-21T16:09:55.102419+05:30",
-      "send_after": "2026-11-21T17:35:55.102419+05:30",
+      "last_msg_id": "<179543863092.2417.8853940131895148412@bazxlabs.com>",
+      "last_timestamp": "2026-11-23T18:27:06.133082+05:30",
+      "send_after": "2026-11-24T03:32:06.133082+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
