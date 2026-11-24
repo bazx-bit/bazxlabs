@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-23T18:27:11.922925+05:30",
-  "total_sent": 243,
+  "last_tick": "2026-11-24T18:48:53.128375+05:30",
+  "total_sent": 244,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -95,11 +95,11 @@
       "name": "Medical Imaging PACS & DICOM Pipeline",
       "direction": "outbound",
       "partner_key": "SEED_7",
-      "stage_idx": 9,
+      "stage_idx": 10,
       "subject": "DICOM CT pipeline automation",
-      "last_msg_id": "<179526392233.2384.13909407361041987469@bazxlabs.com>",
-      "last_timestamp": "2026-11-21T17:55:18.933003+05:30",
-      "send_after": "2026-11-21T20:03:18.933003+05:30",
+      "last_msg_id": "<179552631962.2206.4265453403995778303@gmail.com>",
+      "last_timestamp": "2026-11-24T18:48:30.878817+05:30",
+      "send_after": "2026-11-24T19:03:30.878817+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
