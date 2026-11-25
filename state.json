@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-25T18:39:54.374407+05:30",
-  "total_sent": 246,
+  "last_tick": "2026-11-25T19:29:32.261540+05:30",
+  "total_sent": 247,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -11,11 +11,11 @@
       "name": "Webhook Buffer & Redis Queue",
       "direction": "inbound",
       "partner_key": "SEED_1",
-      "stage_idx": 12,
+      "stage_idx": 13,
       "subject": "Retainer kickoff - Ingestion Infrastructure Telemetry",
-      "last_msg_id": "<179534823261.2203.12943681608708905248@bazxlabs.com>",
-      "last_timestamp": "2026-11-22T17:20:27.471553+05:30",
-      "send_after": "2026-11-22T18:44:27.471553+05:30",
+      "last_msg_id": "<179561517087.2186.9622535498937349109@gmail.com>",
+      "last_timestamp": "2026-11-25T19:29:20.805778+05:30",
+      "send_after": "2026-11-25T22:45:20.805778+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
