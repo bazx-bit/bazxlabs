@@ -1,8 +1,8 @@
 {
   "day": 34,
   "started_at": "2026-09-30T13:50:55.216555",
-  "last_tick": "2026-11-25T17:39:58.522040+05:30",
-  "total_sent": 245,
+  "last_tick": "2026-11-25T18:39:54.374407+05:30",
+  "total_sent": 246,
   "total_received": 0,
   "total_rescued": 5,
   "threads": {
@@ -81,11 +81,11 @@
       "name": "High-Concurrency Shopify Feed Sync",
       "direction": "outbound",
       "partner_key": "SEED_6",
-      "stage_idx": 9,
+      "stage_idx": 10,
       "subject": "Catalog API concurrency script",
-      "last_msg_id": "<179534432296.2203.14200493191003089038@bazxlabs.com>",
-      "last_timestamp": "2026-11-22T16:15:19.844125+05:30",
-      "send_after": "2026-11-22T16:28:19.844125+05:30",
+      "last_msg_id": "<179561219343.2186.16262264022283368801@gmail.com>",
+      "last_timestamp": "2026-11-25T18:39:18.211405+05:30",
+      "send_after": "2026-11-25T21:55:18.211405+05:30",
       "status": "ready_to_start",
       "history": [],
       "cycle": 3
